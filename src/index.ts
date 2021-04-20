@@ -16,8 +16,8 @@ export class LitModal extends LitElement{
     @property({type: Object, attribute: false}) header: TemplateResult | null = null;
     @property({type: Object, attribute: false}) content: TemplateResult | null = null;
     @property({type: Object, attribute: false}) footer: TemplateResult | null = null;
-    @property({type: Boolean, attribute: false}) useStandartCloseBtn: boolean = true;
-    @property({type: String, attribute: false}) closeBtnText: string = 'Close';
+    @property({type: Boolean, attribute: true}) useStandartCloseBtn: boolean = true;
+    @property({type: String, attribute: true}) closeBtnText: string = 'Close';
 
     _open: boolean = false;
     get open(){
