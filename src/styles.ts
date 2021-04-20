@@ -21,8 +21,8 @@ export const DIALOG_STYLES = css`
 }
 .dialog{          
     position: relative;  
-    width: 700px;
-    height: 450px;
+    width: var(--modal-dialog-width, 700px);
+    height: var(--modal-dialog-height, 450px);
     overflow-y: auto;
     z-index: 101;
     background-color: var(--modal-dialog-background, #fefefe);

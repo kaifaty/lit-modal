@@ -8,10 +8,6 @@
 npm i lit-modal
 ```
 
-## Attribute
-
-`open:boolean` - close/open dialog
-
 ## Properties/Attributes
 
 | Name        | Prop/Attr    | Type                     |  Description        |

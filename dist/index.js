@@ -3,6 +3,7 @@ import { nothing } from 'lit-html';
 import { customElement, LitElement, html, property } from 'lit-element';
 import { getScrollbarWidth } from 'kailib';
 import { DIALOG_STYLES } from './styles';
+import { DIALOG_MEDIASTYLES } from './styles-media';
 //import { BUTTON_STYLES } from '../../styles/buttons';
 let isOpened = false;
 let LitModal = class LitModal extends LitElement {
@@ -107,12 +108,13 @@ __decorate([
     property({ type: Object, attribute: false })
 ], LitModal.prototype, "footer", void 0);
 __decorate([
-    property({ type: Boolean, attribute: false })
+    property({ type: Boolean, attribute: true })
 ], LitModal.prototype, "useStandartCloseBtn", void 0);
 __decorate([
-    property({ type: String, attribute: false })
+    property({ type: String, attribute: true })
 ], LitModal.prototype, "closeBtnText", void 0);
 LitModal = __decorate([
     customElement('lit-modal')
 ], LitModal);
 export { LitModal };
+export { DIALOG_MEDIASTYLES };

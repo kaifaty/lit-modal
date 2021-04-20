@@ -3,6 +3,7 @@ import { customElement, LitElement, html, property } from 'lit-element';
 import type {TemplateResult} from 'lit-element';
 import { getScrollbarWidth } from 'kailib'
 import { DIALOG_STYLES } from './styles';
+import { DIALOG_MEDIASTYLES } from './styles-media';
 //import { BUTTON_STYLES } from '../../styles/buttons';
 
 let isOpened = false;
@@ -101,3 +102,5 @@ export class LitModal extends LitElement{
         }        
     }
 }
+
+export {DIALOG_MEDIASTYLES};

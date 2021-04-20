@@ -1,5 +1,6 @@
 import { LitElement } from 'lit-element';
 import type { TemplateResult } from 'lit-element';
+import { DIALOG_MEDIASTYLES } from './styles-media';
 export declare class LitModal extends LitElement {
     static styles: import("lit-element").CSSResult[];
     static get properties(): {
@@ -25,3 +26,4 @@ export declare class LitModal extends LitElement {
     private onClose;
     private onKeypress;
 }
+export { DIALOG_MEDIASTYLES };
