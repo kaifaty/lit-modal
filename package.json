@@ -1,0 +1,44 @@
+{
+  "name": "lit-modal",
+  "version": "1.0.0",
+  "description": "Dialog window based on lit-element",
+  "main": "dist/index.js",
+  "module": "dist/index.js",
+  "typings": "dist/index.d.ts",
+  "typesVersions": {
+    "<3.8": {
+      "*": [
+        "ts3.4/*"
+      ]
+    }
+  },
+  "scripts": {
+    "dev": "parcel demo/index.html -d ./demo/dist",
+    "build": "tsc"
+  },
+  "files": [
+    "/demo/",
+    "/src/",
+    "/dist/"
+  ],
+  "keywords": [
+    "dialog",
+    "modal",
+    "lit-element",
+    "LitElement"
+  ],
+  "homepage": "https://github.com/kaifaty/lit-modal#readme",
+  "bugs": {
+    "url": "https://github.com/kaifaty/lit-modal/issues"
+  },
+  "author": "kaifaty",
+  "license": "MIT",
+  "devDependencies": {
+    "lit-element": "latest",
+    "tslib": "^2.1.0",
+    "typescript": "^4.2.3"
+  },
+  "dependencies": {
+    "kailib": "^1.0.14"
+  }
+}
