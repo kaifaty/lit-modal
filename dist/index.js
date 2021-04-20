@@ -5,7 +5,7 @@ import { getScrollbarWidth } from 'kailib';
 import { DIALOG_STYLES } from './styles';
 //import { BUTTON_STYLES } from '../../styles/buttons';
 let isOpened = false;
-let LitDialog = class LitDialog extends LitElement {
+let LitModal = class LitModal extends LitElement {
     constructor() {
         super(...arguments);
         this.header = null;
@@ -96,23 +96,23 @@ let LitDialog = class LitDialog extends LitElement {
         }
     }
 };
-LitDialog.styles = [DIALOG_STYLES];
+LitModal.styles = [DIALOG_STYLES];
 __decorate([
     property({ type: Object, attribute: false })
-], LitDialog.prototype, "header", void 0);
+], LitModal.prototype, "header", void 0);
 __decorate([
     property({ type: Object, attribute: false })
-], LitDialog.prototype, "content", void 0);
+], LitModal.prototype, "content", void 0);
 __decorate([
     property({ type: Object, attribute: false })
-], LitDialog.prototype, "footer", void 0);
+], LitModal.prototype, "footer", void 0);
 __decorate([
     property({ type: Boolean, attribute: false })
-], LitDialog.prototype, "useStandartCloseBtn", void 0);
+], LitModal.prototype, "useStandartCloseBtn", void 0);
 __decorate([
     property({ type: String, attribute: false })
-], LitDialog.prototype, "closeBtnText", void 0);
-LitDialog = __decorate([
+], LitModal.prototype, "closeBtnText", void 0);
+LitModal = __decorate([
     customElement('lit-modal')
-], LitDialog);
-export { LitDialog };
+], LitModal);
+export { LitModal };

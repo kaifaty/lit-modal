@@ -1,6 +1,6 @@
 import { LitElement } from 'lit-element';
 import type { TemplateResult } from 'lit-element';
-export declare class LitDialog extends LitElement {
+export declare class LitModal extends LitElement {
     static styles: import("lit-element").CSSResult[];
     static get properties(): {
         open: {
