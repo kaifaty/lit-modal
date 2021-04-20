@@ -8,7 +8,7 @@ import { DIALOG_STYLES } from './styles';
 let isOpened = false;
 
 @customElement('lit-modal')
-export class LitDialog extends LitElement{
+export class LitModal extends LitElement{
     static styles = [DIALOG_STYLES];
     static get properties() { 
         return { open: { type: Boolean, reflect: true } };
