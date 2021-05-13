@@ -1,29 +1,40 @@
-import { LitElement } from 'lit-element';
-import type { TemplateResult } from 'lit-element';
+import { LitElement } from 'lit';
+import type { TemplateResult } from 'lit';
 import { DIALOG_MEDIASTYLES } from './styles-media';
 export declare class LitModal extends LitElement {
-    static styles: import("lit-element").CSSResult[];
+    static get styles(): import("lit").CSSResultGroup[];
     static get properties(): {
         open: {
             type: BooleanConstructor;
             reflect: boolean;
         };
     };
-    header: TemplateResult | null;
-    content: TemplateResult | null;
-    footer: TemplateResult | null;
-    useStandartCloseBtn: boolean;
-    closeBtnText: string;
-    _open: boolean;
-    get open(): boolean;
-    set open(value: boolean);
-    tCloseButtonText(): string | null;
-    private _tHeader;
-    private _tFooter;
-    render(): TemplateResult;
-    private onShow;
-    private onHide;
-    private onClose;
-    private onKeypress;
+    header: TemplateResult | string | null;
+    content: TemplateResult | string | null;
+    footer: TemplateResult | string | null;
+    closeBtnText: TemplateResult | string;
+    open: boolean;
+    _onHideEvents: Function[];
+    _onShowEvents: Function[];
+    _resolve: Function | null;
+    _reject: Function | null;
+    private headerTemplate;
+    private footerTemplate;
+    render(): TemplateResult<1>;
+    private _onClick;
+    private _onShow;
+    private _onHide;
+    private _onClose;
+    private _onKeypress;
+    onHide(f: Function): void;
+    offHide(f: Function): void;
+    onShow(f: Function): void;
+    offShow(f: Function): void;
+    showDialog(data: {
+        header: TemplateResult | string | null;
+        content: TemplateResult | string | null;
+        footer: TemplateResult | string | null;
+        closeBtnText?: TemplateResult | string;
+    }): Promise<unknown>;
 }
 export { DIALOG_MEDIASTYLES };

@@ -1,4 +1,4 @@
-import { css } from 'lit-element';
+import { css } from 'lit';
 
 export const DIALOG_STYLES = css`
 .overlap{
@@ -62,6 +62,13 @@ button{
 }
 button:hover{
     background-color: var(--button-background-hover, #444);
+}
+button.primary{
+    color: var(--button-primary-color, #444);
+    background-color: var(--button-primary-background, #444);
+}
+button.primary:hover{
+    background-color: var(--button-primary-background-hover, #444);
 }
 .close-icon{
     position: absolute;
