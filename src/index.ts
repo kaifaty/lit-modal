@@ -47,12 +47,12 @@ export class LitModal extends LitElement{
                 <footer>
                     ${
                         this.useCancelBtn 
-                        ? html`<slot name = "closeBtn">
+                        ? html`<div @click = "${this._close}">
+                                    <slot name = "closeBtn">
                                     <button type = "button"
-                                            class = "button"
-                                            @click = "${this._close}"
-                                            >${this.closeBtnText}</button>
-                                </slot>`
+                                            class = "button">${this.closeBtnText}</button>
+                                    </slot>
+                                </div>`
                         : nothing
                     }
                     <slot name = "footer"></slot>
