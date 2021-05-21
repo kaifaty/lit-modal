@@ -1,16 +1,12 @@
 
 import '../src/index';
-import { html, render } from 'lit-html';
-
-const header = html`Modal header`;
-const content = html`Modal content`;
-const footer = html`Modal footer`;
+import { html, render } from 'lit';
 
 const modal = html`
-    <lit-modal open 
-    .header = "${header}"
-    .content = "${content}"
-    .footer = "${footer}"
-    ></lit-modal>
+    <lit-modal open>
+        <div slot = "header">Modal header</div>
+        <div>Content text</div>
+        <div slot = "footer">Modal footer</div>
+    </lit-modal>
 `;
 render(modal, document.getElementById('app'));

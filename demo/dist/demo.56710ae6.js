@@ -598,83 +598,1840 @@ function __classPrivateFieldSet(receiver, state, value, kind, f) {
   if (typeof state === "function" ? receiver !== state || !f : !state.has(receiver)) throw new TypeError("Cannot write private member to an object whose class did not declare it");
   return kind === "a" ? f.call(receiver, value) : f ? f.value = value : state.set(receiver, value), value;
 }
-},{}],"../node_modules/lit-html/lib/directive.js":[function(require,module,exports) {
+},{}],"../node_modules/@lit/reactive-element/css-tag.js":[function(require,module,exports) {
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
   value: true
 });
-exports.isDirective = exports.directive = void 0;
+exports.unsafeCSS = exports.supportsAdoptingStyleSheets = exports.getCompatibleStyle = exports.css = exports.adoptStyles = exports.CSSResult = void 0;
 
 /**
  * @license
- * Copyright (c) 2017 The Polymer Project Authors. All rights reserved.
- * This code may only be used under the BSD style license found at
- * http://polymer.github.io/LICENSE.txt
- * The complete set of authors may be found at
- * http://polymer.github.io/AUTHORS.txt
- * The complete set of contributors may be found at
- * http://polymer.github.io/CONTRIBUTORS.txt
- * Code distributed by Google as part of the polymer project is also
- * subject to an additional IP rights grant found at
- * http://polymer.github.io/PATENTS.txt
+ * Copyright 2019 Google LLC
+ * SPDX-License-Identifier: BSD-3-Clause
  */
-const directives = new WeakMap();
+const t = window.ShadowRoot && (void 0 === window.ShadyCSS || window.ShadyCSS.nativeShadow) && "adoptedStyleSheets" in Document.prototype && "replace" in CSSStyleSheet.prototype,
+      e = Symbol();
+exports.supportsAdoptingStyleSheets = t;
+
+class s {
+  constructor(t, s) {
+    if (s !== e) throw Error("CSSResult is not constructable. Use `unsafeCSS` or `css` instead.");
+    this.cssText = t;
+  }
+
+  get styleSheet() {
+    return t && void 0 === this.t && (this.t = new CSSStyleSheet(), this.t.replaceSync(this.cssText)), this.t;
+  }
+
+  toString() {
+    return this.cssText;
+  }
+
+}
+
+exports.CSSResult = s;
+
+const n = new Map(),
+      o = t => {
+  let o = n.get(t);
+  return void 0 === o && n.set(t, o = new s(t, e)), o;
+},
+      r = t => o("string" == typeof t ? t : t + ""),
+      i = (t, ...e) => {
+  const n = 1 === t.length ? t[0] : e.reduce((e, n, o) => e + (t => {
+    if (t instanceof s) return t.cssText;
+    if ("number" == typeof t) return t;
+    throw Error("Value passed to 'css' function must be a 'css' function result: " + t + ". Use 'unsafeCSS' to pass non-literal values, but take care to ensure page security.");
+  })(n) + t[o + 1], t[0]);
+  return o(n);
+},
+      S = (e, s) => {
+  t ? e.adoptedStyleSheets = s.map(t => t instanceof CSSStyleSheet ? t : t.styleSheet) : s.forEach(t => {
+    const s = document.createElement("style");
+    s.textContent = t.cssText, e.appendChild(s);
+  });
+},
+      u = t ? t => t : t => t instanceof CSSStyleSheet ? (t => {
+  let e = "";
+
+  for (const s of t.cssRules) e += s.cssText;
+
+  return r(e);
+})(t) : t;
+
+exports.getCompatibleStyle = u;
+exports.adoptStyles = S;
+exports.css = i;
+exports.unsafeCSS = r;
+},{}],"../node_modules/@lit/reactive-element/reactive-element.js":[function(require,module,exports) {
+"use strict";
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+Object.defineProperty(exports, "CSSResult", {
+  enumerable: true,
+  get: function () {
+    return _cssTag.CSSResult;
+  }
+});
+Object.defineProperty(exports, "adoptStyles", {
+  enumerable: true,
+  get: function () {
+    return _cssTag.adoptStyles;
+  }
+});
+Object.defineProperty(exports, "css", {
+  enumerable: true,
+  get: function () {
+    return _cssTag.css;
+  }
+});
+Object.defineProperty(exports, "getCompatibleStyle", {
+  enumerable: true,
+  get: function () {
+    return _cssTag.getCompatibleStyle;
+  }
+});
+Object.defineProperty(exports, "supportsAdoptingStyleSheets", {
+  enumerable: true,
+  get: function () {
+    return _cssTag.supportsAdoptingStyleSheets;
+  }
+});
+Object.defineProperty(exports, "unsafeCSS", {
+  enumerable: true,
+  get: function () {
+    return _cssTag.unsafeCSS;
+  }
+});
+exports.notEqual = exports.defaultConverter = exports.ReactiveElement = void 0;
+
+var _cssTag = require("./css-tag.js");
+
 /**
- * Brands a function as a directive factory function so that lit-html will call
- * the function during template rendering, rather than passing as a value.
- *
- * A _directive_ is a function that takes a Part as an argument. It has the
- * signature: `(part: Part) => void`.
- *
- * A directive _factory_ is a function that takes arguments for data and
- * configuration and returns a directive. Users of directive usually refer to
- * the directive factory as the directive. For example, "The repeat directive".
- *
- * Usually a template author will invoke a directive factory in their template
- * with relevant arguments, which will then return a directive function.
- *
- * Here's an example of using the `repeat()` directive factory that takes an
- * array and a function to render an item:
- *
- * ```js
- * html`<ul><${repeat(items, (item) => html`<li>${item}</li>`)}</ul>`
- * ```
- *
- * When `repeat` is invoked, it returns a directive function that closes over
- * `items` and the template function. When the outer template is rendered, the
- * return directive function is called with the Part for the expression.
- * `repeat` then performs it's custom logic to render multiple items.
- *
- * @param f The directive factory function. Must be a function that returns a
- * function of the signature `(part: Part) => void`. The returned function will
- * be called with the part object.
- *
- * @example
- *
- * import {directive, html} from 'lit-html';
- *
- * const immutable = directive((v) => (part) => {
- *   if (part.value !== v) {
- *     part.setValue(v)
- *   }
- * });
+ * @license
+ * Copyright 2017 Google LLC
+ * SPDX-License-Identifier: BSD-3-Clause
  */
+var s, e, h, r;
 
-const directive = f => (...args) => {
-  const d = f(...args);
-  directives.set(d, true);
-  return d;
+const o = {
+  toAttribute(t, i) {
+    switch (i) {
+      case Boolean:
+        t = t ? "" : null;
+        break;
+
+      case Object:
+      case Array:
+        t = null == t ? t : JSON.stringify(t);
+    }
+
+    return t;
+  },
+
+  fromAttribute(t, i) {
+    let s = t;
+
+    switch (i) {
+      case Boolean:
+        s = null !== t;
+        break;
+
+      case Number:
+        s = null === t ? null : Number(t);
+        break;
+
+      case Object:
+      case Array:
+        try {
+          s = JSON.parse(t);
+        } catch (t) {
+          s = null;
+        }
+
+    }
+
+    return s;
+  }
+
+},
+      n = (t, i) => i !== t && (i == i || t == t),
+      l = {
+  attribute: !0,
+  type: String,
+  converter: o,
+  reflect: !1,
+  hasChanged: n
 };
 
-exports.directive = directive;
+exports.notEqual = n;
+exports.defaultConverter = o;
 
-const isDirective = o => {
-  return typeof o === 'function' && directives.has(o);
+class a extends HTMLElement {
+  constructor() {
+    super(), this.Πi = new Map(), this.Πo = void 0, this.Πl = void 0, this.isUpdatePending = !1, this.hasUpdated = !1, this.Πh = null, this.u();
+  }
+
+  static addInitializer(t) {
+    var i;
+    null !== (i = this.v) && void 0 !== i || (this.v = []), this.v.push(t);
+  }
+
+  static get observedAttributes() {
+    this.finalize();
+    const t = [];
+    return this.elementProperties.forEach((i, s) => {
+      const e = this.Πp(s, i);
+      void 0 !== e && (this.Πm.set(e, s), t.push(e));
+    }), t;
+  }
+
+  static createProperty(t, i = l) {
+    if (i.state && (i.attribute = !1), this.finalize(), this.elementProperties.set(t, i), !i.noAccessor && !this.prototype.hasOwnProperty(t)) {
+      const s = "symbol" == typeof t ? Symbol() : "__" + t,
+            e = this.getPropertyDescriptor(t, s, i);
+      void 0 !== e && Object.defineProperty(this.prototype, t, e);
+    }
+  }
+
+  static getPropertyDescriptor(t, i, s) {
+    return {
+      get() {
+        return this[i];
+      },
+
+      set(e) {
+        const h = this[t];
+        this[i] = e, this.requestUpdate(t, h, s);
+      },
+
+      configurable: !0,
+      enumerable: !0
+    };
+  }
+
+  static getPropertyOptions(t) {
+    return this.elementProperties.get(t) || l;
+  }
+
+  static finalize() {
+    if (this.hasOwnProperty("finalized")) return !1;
+    this.finalized = !0;
+    const t = Object.getPrototypeOf(this);
+
+    if (t.finalize(), this.elementProperties = new Map(t.elementProperties), this.Πm = new Map(), this.hasOwnProperty("properties")) {
+      const t = this.properties,
+            i = [...Object.getOwnPropertyNames(t), ...Object.getOwnPropertySymbols(t)];
+
+      for (const s of i) this.createProperty(s, t[s]);
+    }
+
+    return this.elementStyles = this.finalizeStyles(this.styles), !0;
+  }
+
+  static finalizeStyles(i) {
+    const s = [];
+
+    if (Array.isArray(i)) {
+      const e = new Set(i.flat(1 / 0).reverse());
+
+      for (const i of e) s.unshift((0, _cssTag.getCompatibleStyle)(i));
+    } else void 0 !== i && s.push((0, _cssTag.getCompatibleStyle)(i));
+
+    return s;
+  }
+
+  static Πp(t, i) {
+    const s = i.attribute;
+    return !1 === s ? void 0 : "string" == typeof s ? s : "string" == typeof t ? t.toLowerCase() : void 0;
+  }
+
+  u() {
+    var t;
+    this.Πg = new Promise(t => this.enableUpdating = t), this.L = new Map(), this.Π_(), this.requestUpdate(), null === (t = this.constructor.v) || void 0 === t || t.forEach(t => t(this));
+  }
+
+  addController(t) {
+    var i, s;
+    (null !== (i = this.ΠU) && void 0 !== i ? i : this.ΠU = []).push(t), void 0 !== this.renderRoot && this.isConnected && (null === (s = t.hostConnected) || void 0 === s || s.call(t));
+  }
+
+  removeController(t) {
+    var i;
+    null === (i = this.ΠU) || void 0 === i || i.splice(this.ΠU.indexOf(t) >>> 0, 1);
+  }
+
+  Π_() {
+    this.constructor.elementProperties.forEach((t, i) => {
+      this.hasOwnProperty(i) && (this.Πi.set(i, this[i]), delete this[i]);
+    });
+  }
+
+  createRenderRoot() {
+    var t;
+    const s = null !== (t = this.shadowRoot) && void 0 !== t ? t : this.attachShadow(this.constructor.shadowRootOptions);
+    return (0, _cssTag.adoptStyles)(s, this.constructor.elementStyles), s;
+  }
+
+  connectedCallback() {
+    var t;
+    void 0 === this.renderRoot && (this.renderRoot = this.createRenderRoot()), this.enableUpdating(!0), null === (t = this.ΠU) || void 0 === t || t.forEach(t => {
+      var i;
+      return null === (i = t.hostConnected) || void 0 === i ? void 0 : i.call(t);
+    }), this.Πl && (this.Πl(), this.Πo = this.Πl = void 0);
+  }
+
+  enableUpdating(t) {}
+
+  disconnectedCallback() {
+    var t;
+    null === (t = this.ΠU) || void 0 === t || t.forEach(t => {
+      var i;
+      return null === (i = t.hostDisconnected) || void 0 === i ? void 0 : i.call(t);
+    }), this.Πo = new Promise(t => this.Πl = t);
+  }
+
+  attributeChangedCallback(t, i, s) {
+    this.K(t, s);
+  }
+
+  Πj(t, i, s = l) {
+    var e, h;
+    const r = this.constructor.Πp(t, s);
+
+    if (void 0 !== r && !0 === s.reflect) {
+      const n = (null !== (h = null === (e = s.converter) || void 0 === e ? void 0 : e.toAttribute) && void 0 !== h ? h : o.toAttribute)(i, s.type);
+      this.Πh = t, null == n ? this.removeAttribute(r) : this.setAttribute(r, n), this.Πh = null;
+    }
+  }
+
+  K(t, i) {
+    var s, e, h;
+    const r = this.constructor,
+          n = r.Πm.get(t);
+
+    if (void 0 !== n && this.Πh !== n) {
+      const t = r.getPropertyOptions(n),
+            l = t.converter,
+            a = null !== (h = null !== (e = null === (s = l) || void 0 === s ? void 0 : s.fromAttribute) && void 0 !== e ? e : "function" == typeof l ? l : null) && void 0 !== h ? h : o.fromAttribute;
+      this.Πh = n, this[n] = a(i, t.type), this.Πh = null;
+    }
+  }
+
+  requestUpdate(t, i, s) {
+    let e = !0;
+    void 0 !== t && (((s = s || this.constructor.getPropertyOptions(t)).hasChanged || n)(this[t], i) ? (this.L.has(t) || this.L.set(t, i), !0 === s.reflect && this.Πh !== t && (void 0 === this.Πk && (this.Πk = new Map()), this.Πk.set(t, s))) : e = !1), !this.isUpdatePending && e && (this.Πg = this.Πq());
+  }
+
+  async Πq() {
+    this.isUpdatePending = !0;
+
+    try {
+      for (await this.Πg; this.Πo;) await this.Πo;
+    } catch (t) {
+      Promise.reject(t);
+    }
+
+    const t = this.performUpdate();
+    return null != t && (await t), !this.isUpdatePending;
+  }
+
+  performUpdate() {
+    var t;
+    if (!this.isUpdatePending) return;
+    this.hasUpdated, this.Πi && (this.Πi.forEach((t, i) => this[i] = t), this.Πi = void 0);
+    let i = !1;
+    const s = this.L;
+
+    try {
+      i = this.shouldUpdate(s), i ? (this.willUpdate(s), null === (t = this.ΠU) || void 0 === t || t.forEach(t => {
+        var i;
+        return null === (i = t.hostUpdate) || void 0 === i ? void 0 : i.call(t);
+      }), this.update(s)) : this.Π$();
+    } catch (t) {
+      throw i = !1, this.Π$(), t;
+    }
+
+    i && this.E(s);
+  }
+
+  willUpdate(t) {}
+
+  E(t) {
+    var i;
+    null === (i = this.ΠU) || void 0 === i || i.forEach(t => {
+      var i;
+      return null === (i = t.hostUpdated) || void 0 === i ? void 0 : i.call(t);
+    }), this.hasUpdated || (this.hasUpdated = !0, this.firstUpdated(t)), this.updated(t);
+  }
+
+  Π$() {
+    this.L = new Map(), this.isUpdatePending = !1;
+  }
+
+  get updateComplete() {
+    return this.getUpdateComplete();
+  }
+
+  getUpdateComplete() {
+    return this.Πg;
+  }
+
+  shouldUpdate(t) {
+    return !0;
+  }
+
+  update(t) {
+    void 0 !== this.Πk && (this.Πk.forEach((t, i) => this.Πj(i, this[i], t)), this.Πk = void 0), this.Π$();
+  }
+
+  updated(t) {}
+
+  firstUpdated(t) {}
+
+}
+
+exports.ReactiveElement = a;
+a.finalized = !0, a.elementProperties = new Map(), a.elementStyles = [], a.shadowRootOptions = {
+  mode: "open"
+}, null === (e = (s = globalThis).reactiveElementPlatformSupport) || void 0 === e || e.call(s, {
+  ReactiveElement: a
+}), (null !== (h = (r = globalThis).reactiveElementVersions) && void 0 !== h ? h : r.reactiveElementVersions = []).push("1.0.0-rc.2");
+},{"./css-tag.js":"../node_modules/@lit/reactive-element/css-tag.js"}],"../node_modules/lit/node_modules/lit-html/lit-html.js":[function(require,module,exports) {
+"use strict";
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.svg = exports.render = exports.nothing = exports.noChange = exports.html = exports._Σ = void 0;
+
+/**
+ * @license
+ * Copyright 2017 Google LLC
+ * SPDX-License-Identifier: BSD-3-Clause
+ */
+var t, i, s, e;
+
+const o = globalThis.trustedTypes,
+      l = o ? o.createPolicy("lit-html", {
+  createHTML: t => t
+}) : void 0,
+      n = `lit$${(Math.random() + "").slice(9)}$`,
+      h = "?" + n,
+      r = `<${h}>`,
+      u = document,
+      c = (t = "") => u.createComment(t),
+      d = t => null === t || "object" != typeof t && "function" != typeof t,
+      v = Array.isArray,
+      a = t => {
+  var i;
+  return v(t) || "function" == typeof (null === (i = t) || void 0 === i ? void 0 : i[Symbol.iterator]);
+},
+      f = /<(?:(!--|\/[^a-zA-Z])|(\/?[a-zA-Z][^>\s]*)|(\/?$))/g,
+      _ = /-->/g,
+      m = />/g,
+      p = />|[ 	\n\r](?:([^\s"'>=/]+)([ 	\n\r]*=[ 	\n\r]*(?:[^ 	\n\r"'`<>=]|("|')|))|$)/g,
+      $ = /'/g,
+      g = /"/g,
+      y = /^(?:script|style|textarea)$/i,
+      b = t => (i, ...s) => ({
+  _$litType$: t,
+  strings: i,
+  values: s
+}),
+      T = b(1),
+      x = b(2),
+      w = Symbol.for("lit-noChange"),
+      A = Symbol.for("lit-nothing"),
+      P = new WeakMap(),
+      V = (t, i, s) => {
+  var e, o;
+  const l = null !== (e = null == s ? void 0 : s.renderBefore) && void 0 !== e ? e : i;
+  let n = l._$litPart$;
+
+  if (void 0 === n) {
+    const t = null !== (o = null == s ? void 0 : s.renderBefore) && void 0 !== o ? o : null;
+    l._$litPart$ = n = new C(i.insertBefore(c(), t), t, void 0, s);
+  }
+
+  return n.I(t), n;
+},
+      E = u.createTreeWalker(u, 129, null, !1),
+      M = (t, i) => {
+  const s = t.length - 1,
+        e = [];
+  let o,
+      h = 2 === i ? "<svg>" : "",
+      u = f;
+
+  for (let i = 0; i < s; i++) {
+    const s = t[i];
+    let l,
+        c,
+        d = -1,
+        v = 0;
+
+    for (; v < s.length && (u.lastIndex = v, c = u.exec(s), null !== c);) v = u.lastIndex, u === f ? "!--" === c[1] ? u = _ : void 0 !== c[1] ? u = m : void 0 !== c[2] ? (y.test(c[2]) && (o = RegExp("</" + c[2], "g")), u = p) : void 0 !== c[3] && (u = p) : u === p ? ">" === c[0] ? (u = null != o ? o : f, d = -1) : void 0 === c[1] ? d = -2 : (d = u.lastIndex - c[2].length, l = c[1], u = void 0 === c[3] ? p : '"' === c[3] ? g : $) : u === g || u === $ ? u = p : u === _ || u === m ? u = f : (u = p, o = void 0);
+
+    const a = u === p && t[i + 1].startsWith("/>") ? " " : "";
+    h += u === f ? s + r : d >= 0 ? (e.push(l), s.slice(0, d) + "$lit$" + s.slice(d) + n + a) : s + n + (-2 === d ? (e.push(void 0), i) : a);
+  }
+
+  const c = h + (t[s] || "<?>") + (2 === i ? "</svg>" : "");
+  return [void 0 !== l ? l.createHTML(c) : c, e];
 };
 
-exports.isDirective = isDirective;
-},{}],"../node_modules/lit-html/lib/dom.js":[function(require,module,exports) {
+exports.render = V;
+exports.nothing = A;
+exports.noChange = w;
+exports.svg = x;
+exports.html = T;
+
+class N {
+  constructor({
+    strings: t,
+    _$litType$: i
+  }, s) {
+    let e;
+    this.parts = [];
+    let l = 0,
+        r = 0;
+    const u = t.length - 1,
+          d = this.parts,
+          [v, a] = M(t, i);
+
+    if (this.el = N.createElement(v, s), E.currentNode = this.el.content, 2 === i) {
+      const t = this.el.content,
+            i = t.firstChild;
+      i.remove(), t.append(...i.childNodes);
+    }
+
+    for (; null !== (e = E.nextNode()) && d.length < u;) {
+      if (1 === e.nodeType) {
+        if (e.hasAttributes()) {
+          const t = [];
+
+          for (const i of e.getAttributeNames()) if (i.endsWith("$lit$") || i.startsWith(n)) {
+            const s = a[r++];
+
+            if (t.push(i), void 0 !== s) {
+              const t = e.getAttribute(s.toLowerCase() + "$lit$").split(n),
+                    i = /([.?@])?(.*)/.exec(s);
+              d.push({
+                type: 1,
+                index: l,
+                name: i[2],
+                strings: t,
+                ctor: "." === i[1] ? I : "?" === i[1] ? L : "@" === i[1] ? R : H
+              });
+            } else d.push({
+              type: 6,
+              index: l
+            });
+          }
+
+          for (const i of t) e.removeAttribute(i);
+        }
+
+        if (y.test(e.tagName)) {
+          const t = e.textContent.split(n),
+                i = t.length - 1;
+
+          if (i > 0) {
+            e.textContent = o ? o.emptyScript : "";
+
+            for (let s = 0; s < i; s++) e.append(t[s], c()), E.nextNode(), d.push({
+              type: 2,
+              index: ++l
+            });
+
+            e.append(t[i], c());
+          }
+        }
+      } else if (8 === e.nodeType) if (e.data === h) d.push({
+        type: 2,
+        index: l
+      });else {
+        let t = -1;
+
+        for (; -1 !== (t = e.data.indexOf(n, t + 1));) d.push({
+          type: 7,
+          index: l
+        }), t += n.length - 1;
+      }
+
+      l++;
+    }
+  }
+
+  static createElement(t, i) {
+    const s = u.createElement("template");
+    return s.innerHTML = t, s;
+  }
+
+}
+
+function S(t, i, s = t, e) {
+  var o, l, n, h;
+  if (i === w) return i;
+  let r = void 0 !== e ? null === (o = s.Σi) || void 0 === o ? void 0 : o[e] : s.Σo;
+  const u = d(i) ? void 0 : i._$litDirective$;
+  return (null == r ? void 0 : r.constructor) !== u && (null === (l = null == r ? void 0 : r.O) || void 0 === l || l.call(r, !1), void 0 === u ? r = void 0 : (r = new u(t), r.T(t, s, e)), void 0 !== e ? (null !== (n = (h = s).Σi) && void 0 !== n ? n : h.Σi = [])[e] = r : s.Σo = r), void 0 !== r && (i = S(t, r.S(t, i.values), r, e)), i;
+}
+
+class k {
+  constructor(t, i) {
+    this.l = [], this.N = void 0, this.D = t, this.M = i;
+  }
+
+  u(t) {
+    var i;
+    const {
+      el: {
+        content: s
+      },
+      parts: e
+    } = this.D,
+          o = (null !== (i = null == t ? void 0 : t.creationScope) && void 0 !== i ? i : u).importNode(s, !0);
+    E.currentNode = o;
+    let l = E.nextNode(),
+        n = 0,
+        h = 0,
+        r = e[0];
+
+    for (; void 0 !== r;) {
+      if (n === r.index) {
+        let i;
+        2 === r.type ? i = new C(l, l.nextSibling, this, t) : 1 === r.type ? i = new r.ctor(l, r.name, r.strings, this, t) : 6 === r.type && (i = new z(l, this, t)), this.l.push(i), r = e[++h];
+      }
+
+      n !== (null == r ? void 0 : r.index) && (l = E.nextNode(), n++);
+    }
+
+    return o;
+  }
+
+  v(t) {
+    let i = 0;
+
+    for (const s of this.l) void 0 !== s && (void 0 !== s.strings ? (s.I(t, s, i), i += s.strings.length - 2) : s.I(t[i])), i++;
+  }
+
+}
+
+class C {
+  constructor(t, i, s, e) {
+    this.type = 2, this.N = void 0, this.A = t, this.B = i, this.M = s, this.options = e;
+  }
+
+  setConnected(t) {
+    var i;
+    null === (i = this.P) || void 0 === i || i.call(this, t);
+  }
+
+  get parentNode() {
+    return this.A.parentNode;
+  }
+
+  get startNode() {
+    return this.A;
+  }
+
+  get endNode() {
+    return this.B;
+  }
+
+  I(t, i = this) {
+    t = S(this, t, i), d(t) ? t === A || null == t || "" === t ? (this.H !== A && this.R(), this.H = A) : t !== this.H && t !== w && this.m(t) : void 0 !== t._$litType$ ? this._(t) : void 0 !== t.nodeType ? this.$(t) : a(t) ? this.g(t) : this.m(t);
+  }
+
+  k(t, i = this.B) {
+    return this.A.parentNode.insertBefore(t, i);
+  }
+
+  $(t) {
+    this.H !== t && (this.R(), this.H = this.k(t));
+  }
+
+  m(t) {
+    const i = this.A.nextSibling;
+    null !== i && 3 === i.nodeType && (null === this.B ? null === i.nextSibling : i === this.B.previousSibling) ? i.data = t : this.$(u.createTextNode(t)), this.H = t;
+  }
+
+  _(t) {
+    var i;
+    const {
+      values: s,
+      _$litType$: e
+    } = t,
+          o = "number" == typeof e ? this.C(t) : (void 0 === e.el && (e.el = N.createElement(e.h, this.options)), e);
+    if ((null === (i = this.H) || void 0 === i ? void 0 : i.D) === o) this.H.v(s);else {
+      const t = new k(o, this),
+            i = t.u(this.options);
+      t.v(s), this.$(i), this.H = t;
+    }
+  }
+
+  C(t) {
+    let i = P.get(t.strings);
+    return void 0 === i && P.set(t.strings, i = new N(t)), i;
+  }
+
+  g(t) {
+    v(this.H) || (this.H = [], this.R());
+    const i = this.H;
+    let s,
+        e = 0;
+
+    for (const o of t) e === i.length ? i.push(s = new C(this.k(c()), this.k(c()), this, this.options)) : s = i[e], s.I(o), e++;
+
+    e < i.length && (this.R(s && s.B.nextSibling, e), i.length = e);
+  }
+
+  R(t = this.A.nextSibling, i) {
+    var s;
+
+    for (null === (s = this.P) || void 0 === s || s.call(this, !1, !0, i); t && t !== this.B;) {
+      const i = t.nextSibling;
+      t.remove(), t = i;
+    }
+  }
+
+}
+
+class H {
+  constructor(t, i, s, e, o) {
+    this.type = 1, this.H = A, this.N = void 0, this.V = void 0, this.element = t, this.name = i, this.M = e, this.options = o, s.length > 2 || "" !== s[0] || "" !== s[1] ? (this.H = Array(s.length - 1).fill(A), this.strings = s) : this.H = A;
+  }
+
+  get tagName() {
+    return this.element.tagName;
+  }
+
+  I(t, i = this, s, e) {
+    const o = this.strings;
+    let l = !1;
+    if (void 0 === o) t = S(this, t, i, 0), l = !d(t) || t !== this.H && t !== w, l && (this.H = t);else {
+      const e = t;
+      let n, h;
+
+      for (t = o[0], n = 0; n < o.length - 1; n++) h = S(this, e[s + n], i, n), h === w && (h = this.H[n]), l || (l = !d(h) || h !== this.H[n]), h === A ? t = A : t !== A && (t += (null != h ? h : "") + o[n + 1]), this.H[n] = h;
+    }
+    l && !e && this.W(t);
+  }
+
+  W(t) {
+    t === A ? this.element.removeAttribute(this.name) : this.element.setAttribute(this.name, null != t ? t : "");
+  }
+
+}
+
+class I extends H {
+  constructor() {
+    super(...arguments), this.type = 3;
+  }
+
+  W(t) {
+    this.element[this.name] = t === A ? void 0 : t;
+  }
+
+}
+
+class L extends H {
+  constructor() {
+    super(...arguments), this.type = 4;
+  }
+
+  W(t) {
+    t && t !== A ? this.element.setAttribute(this.name, "") : this.element.removeAttribute(this.name);
+  }
+
+}
+
+class R extends H {
+  constructor() {
+    super(...arguments), this.type = 5;
+  }
+
+  I(t, i = this) {
+    var s;
+    if ((t = null !== (s = S(this, t, i, 0)) && void 0 !== s ? s : A) === w) return;
+    const e = this.H,
+          o = t === A && e !== A || t.capture !== e.capture || t.once !== e.once || t.passive !== e.passive,
+          l = t !== A && (e === A || o);
+    o && this.element.removeEventListener(this.name, this, e), l && this.element.addEventListener(this.name, this, t), this.H = t;
+  }
+
+  handleEvent(t) {
+    var i, s;
+    "function" == typeof this.H ? this.H.call(null !== (s = null === (i = this.options) || void 0 === i ? void 0 : i.host) && void 0 !== s ? s : this.element, t) : this.H.handleEvent(t);
+  }
+
+}
+
+class z {
+  constructor(t, i, s) {
+    this.element = t, this.type = 6, this.N = void 0, this.V = void 0, this.M = i, this.options = s;
+  }
+
+  I(t) {
+    S(this, t);
+  }
+
+}
+
+const Z = {
+  Z: "$lit$",
+  U: n,
+  Y: h,
+  q: 1,
+  X: M,
+  tt: k,
+  it: a,
+  st: S,
+  et: C,
+  ot: H,
+  nt: L,
+  rt: R,
+  lt: I,
+  ht: z
+};
+exports._Σ = Z;
+null === (i = (t = globalThis).litHtmlPlatformSupport) || void 0 === i || i.call(t, N, C), (null !== (s = (e = globalThis).litHtmlVersions) && void 0 !== s ? s : e.litHtmlVersions = []).push("2.0.0-rc.3");
+},{}],"../node_modules/lit/node_modules/lit-element/lit-element.js":[function(require,module,exports) {
+"use strict";
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+var _exportNames = {
+  LitElement: true,
+  UpdatingElement: true,
+  _Φ: true
+};
+exports._Φ = exports.UpdatingElement = exports.LitElement = void 0;
+
+var _reactiveElement = require("@lit/reactive-element");
+
+Object.keys(_reactiveElement).forEach(function (key) {
+  if (key === "default" || key === "__esModule") return;
+  if (Object.prototype.hasOwnProperty.call(_exportNames, key)) return;
+  if (key in exports && exports[key] === _reactiveElement[key]) return;
+  Object.defineProperty(exports, key, {
+    enumerable: true,
+    get: function () {
+      return _reactiveElement[key];
+    }
+  });
+});
+
+var _litHtml = require("lit-html");
+
+Object.keys(_litHtml).forEach(function (key) {
+  if (key === "default" || key === "__esModule") return;
+  if (Object.prototype.hasOwnProperty.call(_exportNames, key)) return;
+  if (key in exports && exports[key] === _litHtml[key]) return;
+  Object.defineProperty(exports, key, {
+    enumerable: true,
+    get: function () {
+      return _litHtml[key];
+    }
+  });
+});
+
+/**
+ * @license
+ * Copyright 2017 Google LLC
+ * SPDX-License-Identifier: BSD-3-Clause
+ */
+var i, l, o, s, n, a;
+const c = _reactiveElement.ReactiveElement;
+exports.UpdatingElement = c;
+(null !== (i = (a = globalThis).litElementVersions) && void 0 !== i ? i : a.litElementVersions = []).push("3.0.0-rc.2");
+
+class h extends _reactiveElement.ReactiveElement {
+  constructor() {
+    super(...arguments), this.renderOptions = {
+      host: this
+    }, this.Φt = void 0;
+  }
+
+  createRenderRoot() {
+    var t, e;
+    const r = super.createRenderRoot();
+    return null !== (t = (e = this.renderOptions).renderBefore) && void 0 !== t || (e.renderBefore = r.firstChild), r;
+  }
+
+  update(t) {
+    const r = this.render();
+    super.update(t), this.Φt = (0, _litHtml.render)(r, this.renderRoot, this.renderOptions);
+  }
+
+  connectedCallback() {
+    var t;
+    super.connectedCallback(), null === (t = this.Φt) || void 0 === t || t.setConnected(!0);
+  }
+
+  disconnectedCallback() {
+    var t;
+    super.disconnectedCallback(), null === (t = this.Φt) || void 0 === t || t.setConnected(!1);
+  }
+
+  render() {
+    return _litHtml.noChange;
+  }
+
+}
+
+exports.LitElement = h;
+h.finalized = !0, h._$litElement$ = !0, null === (o = (l = globalThis).litElementHydrateSupport) || void 0 === o || o.call(l, {
+  LitElement: h
+}), null === (n = (s = globalThis).litElementPlatformSupport) || void 0 === n || n.call(s, {
+  LitElement: h
+});
+const u = {
+  K: (t, e, r) => {
+    t.K(e, r);
+  },
+  L: t => t.L
+};
+exports._Φ = u;
+},{"@lit/reactive-element":"../node_modules/@lit/reactive-element/reactive-element.js","lit-html":"../node_modules/lit/node_modules/lit-html/lit-html.js"}],"../node_modules/lit/index.js":[function(require,module,exports) {
+"use strict";
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+
+require("@lit/reactive-element");
+
+require("lit-html");
+
+var _litElement = require("lit-element/lit-element.js");
+
+Object.keys(_litElement).forEach(function (key) {
+  if (key === "default" || key === "__esModule") return;
+  if (key in exports && exports[key] === _litElement[key]) return;
+  Object.defineProperty(exports, key, {
+    enumerable: true,
+    get: function () {
+      return _litElement[key];
+    }
+  });
+});
+},{"@lit/reactive-element":"../node_modules/@lit/reactive-element/reactive-element.js","lit-html":"../node_modules/lit/node_modules/lit-html/lit-html.js","lit-element/lit-element.js":"../node_modules/lit/node_modules/lit-element/lit-element.js"}],"../node_modules/@lit/reactive-element/decorators/custom-element.js":[function(require,module,exports) {
+"use strict";
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.customElement = void 0;
+
+/**
+ * @license
+ * Copyright 2017 Google LLC
+ * SPDX-License-Identifier: BSD-3-Clause
+ */
+const n = n => e => "function" == typeof e ? ((n, e) => (window.customElements.define(n, e), e))(n, e) : ((n, e) => {
+  const {
+    kind: t,
+    elements: i
+  } = e;
+  return {
+    kind: t,
+    elements: i,
+
+    finisher(e) {
+      window.customElements.define(n, e);
+    }
+
+  };
+})(n, e);
+
+exports.customElement = n;
+},{}],"../node_modules/@lit/reactive-element/decorators/property.js":[function(require,module,exports) {
+"use strict";
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.property = e;
+
+/**
+ * @license
+ * Copyright 2017 Google LLC
+ * SPDX-License-Identifier: BSD-3-Clause
+ */
+const i = (i, e) => "method" === e.kind && e.descriptor && !("value" in e.descriptor) ? { ...e,
+
+  finisher(n) {
+    n.createProperty(e.key, i);
+  }
+
+} : {
+  kind: "field",
+  key: Symbol(),
+  placement: "own",
+  descriptor: {},
+  originalKey: e.key,
+
+  initializer() {
+    "function" == typeof e.initializer && (this[e.key] = e.initializer.call(this));
+  },
+
+  finisher(n) {
+    n.createProperty(e.key, i);
+  }
+
+};
+
+function e(e) {
+  return (n, t) => void 0 !== t ? ((i, e, n) => {
+    e.constructor.createProperty(n, i);
+  })(e, n, t) : i(e, n);
+}
+},{}],"../node_modules/@lit/reactive-element/decorators/state.js":[function(require,module,exports) {
+"use strict";
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.state = r;
+
+var _property = require("./property.js");
+
+/**
+ * @license
+ * Copyright 2017 Google LLC
+ * SPDX-License-Identifier: BSD-3-Clause
+ */
+function r(r) {
+  return (0, _property.property)({ ...r,
+    state: !0,
+    attribute: !1
+  });
+}
+},{"./property.js":"../node_modules/@lit/reactive-element/decorators/property.js"}],"../node_modules/@lit/reactive-element/decorators/base.js":[function(require,module,exports) {
+"use strict";
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.standardPrototypeMethod = exports.legacyPrototypeMethod = exports.decorateProperty = void 0;
+
+/**
+ * @license
+ * Copyright 2017 Google LLC
+ * SPDX-License-Identifier: BSD-3-Clause
+ */
+const e = (e, t, o) => {
+  Object.defineProperty(t, o, e);
+},
+      t = (e, t) => ({
+  kind: "method",
+  placement: "prototype",
+  key: t.key,
+  descriptor: e
+}),
+      o = ({
+  finisher: e,
+  descriptor: t
+}) => (o, n) => {
+  var r;
+
+  if (void 0 === n) {
+    const n = null !== (r = o.originalKey) && void 0 !== r ? r : o.key,
+          i = null != t ? {
+      kind: "method",
+      placement: "prototype",
+      key: n,
+      descriptor: t(o.key)
+    } : { ...o,
+      key: n
+    };
+    return null != e && (i.finisher = function (t) {
+      e(t, n);
+    }), i;
+  }
+
+  {
+    const r = o.constructor;
+    void 0 !== t && Object.defineProperty(o, n, t(n)), null == e || e(r, n);
+  }
+};
+
+exports.decorateProperty = o;
+exports.standardPrototypeMethod = t;
+exports.legacyPrototypeMethod = e;
+},{}],"../node_modules/@lit/reactive-element/decorators/event-options.js":[function(require,module,exports) {
+"use strict";
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.eventOptions = e;
+
+var _base = require("./base.js");
+
+/**
+ * @license
+ * Copyright 2017 Google LLC
+ * SPDX-License-Identifier: BSD-3-Clause
+ */
+function e(e) {
+  return (0, _base.decorateProperty)({
+    finisher: (r, t) => {
+      Object.assign(r.prototype[t], e);
+    }
+  });
+}
+},{"./base.js":"../node_modules/@lit/reactive-element/decorators/base.js"}],"../node_modules/@lit/reactive-element/decorators/query.js":[function(require,module,exports) {
+"use strict";
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.query = o;
+
+var _base = require("./base.js");
+
+/**
+ * @license
+ * Copyright 2017 Google LLC
+ * SPDX-License-Identifier: BSD-3-Clause
+ */
+function o(o, r) {
+  return (0, _base.decorateProperty)({
+    descriptor: t => {
+      const i = {
+        get() {
+          var t;
+          return null === (t = this.renderRoot) || void 0 === t ? void 0 : t.querySelector(o);
+        },
+
+        enumerable: !0,
+        configurable: !0
+      };
+
+      if (r) {
+        const r = "symbol" == typeof t ? Symbol() : "__" + t;
+
+        i.get = function () {
+          var t;
+          return void 0 === this[r] && (this[r] = null === (t = this.renderRoot) || void 0 === t ? void 0 : t.querySelector(o)), this[r];
+        };
+      }
+
+      return i;
+    }
+  });
+}
+},{"./base.js":"../node_modules/@lit/reactive-element/decorators/base.js"}],"../node_modules/@lit/reactive-element/decorators/query-all.js":[function(require,module,exports) {
+"use strict";
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.queryAll = e;
+
+var _base = require("./base.js");
+
+/**
+ * @license
+ * Copyright 2017 Google LLC
+ * SPDX-License-Identifier: BSD-3-Clause
+ */
+function e(e) {
+  return (0, _base.decorateProperty)({
+    descriptor: r => ({
+      get() {
+        var r;
+        return null === (r = this.renderRoot) || void 0 === r ? void 0 : r.querySelectorAll(e);
+      },
+
+      enumerable: !0,
+      configurable: !0
+    })
+  });
+}
+},{"./base.js":"../node_modules/@lit/reactive-element/decorators/base.js"}],"../node_modules/@lit/reactive-element/decorators/query-async.js":[function(require,module,exports) {
+"use strict";
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.queryAsync = e;
+
+var _base = require("./base.js");
+
+/**
+ * @license
+ * Copyright 2017 Google LLC
+ * SPDX-License-Identifier: BSD-3-Clause
+ */
+function e(e) {
+  return (0, _base.decorateProperty)({
+    descriptor: r => ({
+      async get() {
+        var r;
+        return await this.updateComplete, null === (r = this.renderRoot) || void 0 === r ? void 0 : r.querySelector(e);
+      },
+
+      enumerable: !0,
+      configurable: !0
+    })
+  });
+}
+},{"./base.js":"../node_modules/@lit/reactive-element/decorators/base.js"}],"../node_modules/@lit/reactive-element/decorators/query-assigned-nodes.js":[function(require,module,exports) {
+"use strict";
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.queryAssignedNodes = o;
+
+var _base = require("./base.js");
+
+/**
+ * @license
+ * Copyright 2017 Google LLC
+ * SPDX-License-Identifier: BSD-3-Clause
+ */
+const t = Element.prototype,
+      n = t.msMatchesSelector || t.webkitMatchesSelector;
+
+function o(t = "", o = !1, r = "") {
+  return (0, _base.decorateProperty)({
+    descriptor: e => ({
+      get() {
+        var e, l;
+        const i = "slot" + (t ? `[name=${t}]` : ":not([name])");
+        let a = null === (l = null === (e = this.renderRoot) || void 0 === e ? void 0 : e.querySelector(i)) || void 0 === l ? void 0 : l.assignedNodes({
+          flatten: o
+        });
+        return a && r && (a = a.filter(e => e.nodeType === Node.ELEMENT_NODE && (e.matches ? e.matches(r) : n.call(e, r)))), a;
+      },
+
+      enumerable: !0,
+      configurable: !0
+    })
+  });
+}
+},{"./base.js":"../node_modules/@lit/reactive-element/decorators/base.js"}],"../node_modules/lit/decorators.js":[function(require,module,exports) {
+"use strict";
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+
+var _customElement = require("@lit/reactive-element/decorators/custom-element.js");
+
+Object.keys(_customElement).forEach(function (key) {
+  if (key === "default" || key === "__esModule") return;
+  if (key in exports && exports[key] === _customElement[key]) return;
+  Object.defineProperty(exports, key, {
+    enumerable: true,
+    get: function () {
+      return _customElement[key];
+    }
+  });
+});
+
+var _property = require("@lit/reactive-element/decorators/property.js");
+
+Object.keys(_property).forEach(function (key) {
+  if (key === "default" || key === "__esModule") return;
+  if (key in exports && exports[key] === _property[key]) return;
+  Object.defineProperty(exports, key, {
+    enumerable: true,
+    get: function () {
+      return _property[key];
+    }
+  });
+});
+
+var _state = require("@lit/reactive-element/decorators/state.js");
+
+Object.keys(_state).forEach(function (key) {
+  if (key === "default" || key === "__esModule") return;
+  if (key in exports && exports[key] === _state[key]) return;
+  Object.defineProperty(exports, key, {
+    enumerable: true,
+    get: function () {
+      return _state[key];
+    }
+  });
+});
+
+var _eventOptions = require("@lit/reactive-element/decorators/event-options.js");
+
+Object.keys(_eventOptions).forEach(function (key) {
+  if (key === "default" || key === "__esModule") return;
+  if (key in exports && exports[key] === _eventOptions[key]) return;
+  Object.defineProperty(exports, key, {
+    enumerable: true,
+    get: function () {
+      return _eventOptions[key];
+    }
+  });
+});
+
+var _query = require("@lit/reactive-element/decorators/query.js");
+
+Object.keys(_query).forEach(function (key) {
+  if (key === "default" || key === "__esModule") return;
+  if (key in exports && exports[key] === _query[key]) return;
+  Object.defineProperty(exports, key, {
+    enumerable: true,
+    get: function () {
+      return _query[key];
+    }
+  });
+});
+
+var _queryAll = require("@lit/reactive-element/decorators/query-all.js");
+
+Object.keys(_queryAll).forEach(function (key) {
+  if (key === "default" || key === "__esModule") return;
+  if (key in exports && exports[key] === _queryAll[key]) return;
+  Object.defineProperty(exports, key, {
+    enumerable: true,
+    get: function () {
+      return _queryAll[key];
+    }
+  });
+});
+
+var _queryAsync = require("@lit/reactive-element/decorators/query-async.js");
+
+Object.keys(_queryAsync).forEach(function (key) {
+  if (key === "default" || key === "__esModule") return;
+  if (key in exports && exports[key] === _queryAsync[key]) return;
+  Object.defineProperty(exports, key, {
+    enumerable: true,
+    get: function () {
+      return _queryAsync[key];
+    }
+  });
+});
+
+var _queryAssignedNodes = require("@lit/reactive-element/decorators/query-assigned-nodes.js");
+
+Object.keys(_queryAssignedNodes).forEach(function (key) {
+  if (key === "default" || key === "__esModule") return;
+  if (key in exports && exports[key] === _queryAssignedNodes[key]) return;
+  Object.defineProperty(exports, key, {
+    enumerable: true,
+    get: function () {
+      return _queryAssignedNodes[key];
+    }
+  });
+});
+},{"@lit/reactive-element/decorators/custom-element.js":"../node_modules/@lit/reactive-element/decorators/custom-element.js","@lit/reactive-element/decorators/property.js":"../node_modules/@lit/reactive-element/decorators/property.js","@lit/reactive-element/decorators/state.js":"../node_modules/@lit/reactive-element/decorators/state.js","@lit/reactive-element/decorators/event-options.js":"../node_modules/@lit/reactive-element/decorators/event-options.js","@lit/reactive-element/decorators/query.js":"../node_modules/@lit/reactive-element/decorators/query.js","@lit/reactive-element/decorators/query-all.js":"../node_modules/@lit/reactive-element/decorators/query-all.js","@lit/reactive-element/decorators/query-async.js":"../node_modules/@lit/reactive-element/decorators/query-async.js","@lit/reactive-element/decorators/query-assigned-nodes.js":"../node_modules/@lit/reactive-element/decorators/query-assigned-nodes.js"}],"../node_modules/kailib/dist/index.js":[function(require,module,exports) {
+"use strict";
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.parseDec = parseDec;
+exports.firstUpper = firstUpper;
+exports.pad = pad;
+exports.time2string = time2string;
+exports.hsl2rgb = hsl2rgb;
+exports.deepCopy = deepCopy;
+exports.getDigit = getDigit;
+exports.ceilMinify = ceilMinify;
+exports.syncObjects = syncObjects;
+exports.copy2Clipboard = copy2Clipboard;
+exports.getPeriod = getPeriod;
+exports.avarage = avarage;
+exports.parse = parse;
+exports.urlEncode = urlEncode;
+exports.isInt = isInt;
+exports.isOTP = isOTP;
+exports.isEmail = isEmail;
+exports.isPassword = isPassword;
+exports.getFormData = getFormData;
+exports.randomInt = randomInt;
+exports.mobileAndTabletCheck = mobileAndTabletCheck;
+exports.format = format;
+exports.getValue = getValue;
+exports.submitValidation = submitValidation;
+exports.debonce = debonce;
+exports.setCookie = setCookie;
+exports.getCookie = getCookie;
+exports.deleteAllCookies = deleteAllCookies;
+exports.stringToHex = stringToHex;
+exports.hexTostring = hexTostring;
+exports.getTopic = getTopic;
+exports.getScrollbarWidth = getScrollbarWidth;
+
+function parseDec(val) {
+  if (typeof val === 'number') {
+    return val;
+  }
+
+  val = val.replace(',', '.');
+  return parseFloat(val);
+}
+
+function firstUpper(text) {
+  return text[0].toUpperCase() + text.slice(1);
+}
+
+function pad(value, n) {
+  let string = String(value);
+
+  if (string.length < n) {
+    return "0".repeat(n - string.length) + string;
+  } else {
+    return string;
+  }
+}
+
+function time2string(timestamp, type = "smart") {
+  if (timestamp === 0) {
+    return '-';
+  }
+
+  let time = new Date(timestamp * 1000);
+  let now = Date.now();
+
+  if (timestamp === 0) {
+    return "-";
+  }
+
+  let d = pad(time.getDate(), 2);
+  let m = pad(time.getMonth() + 1, 2);
+  let y = time.getFullYear();
+  let h = pad(time.getHours(), 2);
+  let i = pad(time.getMinutes(), 2);
+
+  if (type === "without-year") {
+    return `${d}/${m} ${h}:${i}`;
+  } else if (type === "smart") {
+    if (now - timestamp * 1000 < 84600000) {
+      return `${h}:${i}`;
+    } else {
+      return `${d}/${m}`;
+    }
+  } else if (type === "short") {
+    return `${d}/${m}/${y}`;
+  } else {
+    return `${d}/${m}/${y} ${h}:${i}`;
+  }
+}
+
+function hsl2rgb(h, s, l, hex = true) {
+  let rgb = [];
+
+  try {
+    if (typeof h !== "number") {
+      h = parseInt(h);
+    }
+
+    if (typeof s !== "number") {
+      s = parseInt(s);
+    }
+
+    if (typeof l !== "number") {
+      l = parseInt(l);
+    }
+
+    if (s > 100) {
+      s = 100;
+    }
+
+    if (l > 100) {
+      l = 100;
+    }
+
+    h = h % 360;
+    s = s / 100;
+    l = l / 100;
+    let c, x, m;
+    c = (1 - Math.abs(2 * l - 1)) * s;
+    x = c * (1 - Math.abs(h / 60 % 2 - 1));
+    m = l - c / 2;
+    if (h >= 0 && h < 60) rgb = [c, x, 0];
+    if (h >= 60 && h < 120) rgb = [x, c, 0];
+    if (h >= 120 && h < 180) rgb = [0, c, x];
+    if (h >= 180 && h < 240) rgb = [0, x, c];
+    if (h >= 240 && h < 300) rgb = [x, 0, c];
+    if (h >= 300 && h < 360) rgb = [c, 0, x];
+    rgb[0] = Math.floor(255 * (rgb[0] + m));
+    rgb[1] = Math.floor(255 * (rgb[1] + m));
+    rgb[2] = Math.floor(255 * (rgb[2] + m));
+
+    if (hex) {
+      return "#" + pad(rgb[0].toString(16), 2) + pad(rgb[1].toString(16), 2) + pad(rgb[2].toString(16), 2);
+    } else {
+      return rgb;
+    }
+  } catch (e) {
+    if (!rgb) {
+      if (hex) {
+        return "#000000";
+      } else {
+        return [0, 0, 0];
+      }
+    }
+  }
+}
+
+function deepCopy(obj) {
+  if (Array.isArray(obj)) {
+    let newArray = [];
+
+    for (let i = 0; i < obj.length; i++) {
+      let item = obj[i];
+
+      if (typeof item === "object" && item !== null) {
+        newArray.push(deepCopy(item));
+      } else {
+        newArray.push(item);
+      }
+    }
+
+    return newArray;
+  } else if (typeof obj === "object") {
+    let data = {};
+
+    for (let key in obj) {
+      if (obj.hasOwnProperty(key)) {
+        let item = obj[key];
+
+        if (item !== null && typeof item === "object") {
+          data[key] = deepCopy(item);
+        } else {
+          data[key] = item;
+        }
+      }
+    }
+
+    return data;
+  } else {
+    return obj;
+  }
+}
+
+function getDigit(number) {
+  return Math.log(number) * Math.LOG10E | 0;
+}
+
+function ceilMinify(number, maxDigit) {
+  let digit = getDigit(number);
+
+  if (digit > maxDigit) {
+    let res = 0;
+    let addition = "";
+
+    if (digit > 18) {
+      res = number / 1000000000000000000000;
+      addition = " qi";
+    } else if (digit > 15) {
+      res = number / 1000000000000000000;
+      addition = " qa";
+    } else if (digit > 12) {
+      res = number / 1000000000000000;
+      addition = " tr";
+    } else if (digit > 9) {
+      res = number / 1000000000;
+      addition = " bn";
+    } else if (digit > 6) {
+      res = number / 1000000;
+      addition = " m";
+    } else if (digit > 3) {
+      res = number / 1000;
+      addition = " k";
+    } else {
+      res = number;
+    }
+
+    return [res, addition];
+  } else {
+    return [number, ""];
+  }
+}
+
+function syncObjects(source, target) {
+  for (let key in source) {
+    if (source.hasOwnProperty(key)) {
+      if (!target[key]) {
+        target[key] = source[key];
+      } else if (typeof source[key] === "object" && typeof target[key] === "object") {
+        syncObjects(source[key], target[key]);
+      }
+    }
+  }
+
+  return target;
+}
+
+function copy2Clipboard(text = "_") {
+  let $input = document.createElement("input");
+  $input.setAttribute("type", "text");
+  $input.setAttribute("style", "position: absolute; z-index:-1");
+  $input.value = text;
+  document.body.appendChild($input);
+  $input.select();
+  document.execCommand("copy");
+  $input.remove();
+}
+
+function getPeriod(period = "D") {
+  if (period === "M1") {
+    return 60;
+  } else if (period === "M5") {
+    return 60 * 5;
+  } else if (period === "M15") {
+    return 60 * 15;
+  } else if (period === "M30") {
+    return 60 * 30;
+  } else if (period === "H1") {
+    return 60 * 60;
+  } else if (period === "H2") {
+    return 60 * 120;
+  } else if (period === "H4") {
+    return 60 * 240;
+  } else if (period === "D") {
+    return 60 * 1440;
+  } else if (period === "W") {
+    return 60 * 10080;
+  }
+}
+
+function avarage(array) {
+  if (!Array.isArray(array)) {
+    return false;
+  }
+
+  let sum = 0;
+
+  for (let i = 0; i < array.length; i++) {
+    sum += array[i];
+  }
+
+  return sum / array.length;
+}
+
+function parse(str) {
+  if (typeof str === 'string') {
+    try {
+      str = JSON.parse(str);
+    } catch (e) {
+      return str;
+    }
+  }
+
+  return str;
+}
+
+function urlEncode(params) {
+  let resString = [];
+
+  for (let k in params) {
+    if (params.hasOwnProperty(k)) {
+      let val = typeof params[k] === "object" ? JSON.stringify(params[k]) : params[k];
+      resString.push(k + '=' + encodeURIComponent(val));
+    }
+  }
+
+  return resString.join('&');
+}
+
+function isInt(value) {
+  return typeof value === "number" && Math.floor(value) === value;
+}
+
+function isOTP(value) {
+  return typeof value === "number" && value.toString().length === 6;
+}
+
+function isEmail(email) {
+  const re = /^(([^<>()[\]\\.,;:\s@\"]+(\.[^<>()[\]\\.,;:\s@\"]+)*)|(\".+\"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/;
+  return typeof email === "string" && re.test(email);
+}
+
+function isPassword(password) {
+  return typeof password === "string" && password.length > 6;
+}
+
+function getFormData(form) {
+  let params = {};
+
+  if (form instanceof HTMLFormElement) {
+    for (let i = 0; i < form.elements.length; i++) {
+      let el = form.elements[i]; // @ts-ignore
+
+      if (!el.name) continue;
+
+      if (el instanceof HTMLInputElement && el.type === "radio" && el.checked) {
+        params[el.name] = el.value;
+      } else if (el instanceof HTMLInputElement && el.type === "file") {
+        params[el.name] = el.files;
+      } else if (el instanceof HTMLInputElement) {
+        if (el.type === "checkbox") {
+          params[el.name] = el.checked;
+        } else if (el.type === "number") {
+          params[el.name] = Number(el.value);
+        } else {
+          params[el.name] = el.value.trim();
+        }
+      } else if (el instanceof HTMLTextAreaElement || el instanceof HTMLSelectElement) {
+        params[el.name] = el.value.trim();
+      }
+    }
+  }
+
+  return params;
+}
+
+function randomInt(min, max) {
+  return Math.round(min + Math.random() * (max - min));
+}
+
+function mobileAndTabletCheck() {
+  let check = false; //@ts-ignore
+
+  const a = navigator.userAgent || navigator.vendor || window['opera'];
+  return /(android|bb\d+|meego).+mobile|avantgo|bada\/|blackberry|blazer|compal|elaine|fennec|hiptop|iemobile|ip(hone|od)|iris|kindle|lge |maemo|midp|mmp|mobile.+firefox|netfront|opera m(ob|in)i|palm( os)?|phone|p(ixi|re)\/|plucker|pocket|psp|series(4|6)0|symbian|treo|up\.(browser|link)|vodafone|wap|windows ce|xda|xiino|android|ipad|playbook|silk/i.test(a) || /1207|6310|6590|3gso|4thp|50[1-6]i|770s|802s|a wa|abac|ac(er|oo|s\-)|ai(ko|rn)|al(av|ca|co)|amoi|an(ex|ny|yw)|aptu|ar(ch|go)|as(te|us)|attw|au(di|\-m|r |s )|avan|be(ck|ll|nq)|bi(lb|rd)|bl(ac|az)|br(e|v)w|bumb|bw\-(n|u)|c55\/|capi|ccwa|cdm\-|cell|chtm|cldc|cmd\-|co(mp|nd)|craw|da(it|ll|ng)|dbte|dc\-s|devi|dica|dmob|do(c|p)o|ds(12|\-d)|el(49|ai)|em(l2|ul)|er(ic|k0)|esl8|ez([4-7]0|os|wa|ze)|fetc|fly(\-|_)|g1 u|g560|gene|gf\-5|g\-mo|go(\.w|od)|gr(ad|un)|haie|hcit|hd\-(m|p|t)|hei\-|hi(pt|ta)|hp( i|ip)|hs\-c|ht(c(\-| |_|a|g|p|s|t)|tp)|hu(aw|tc)|i\-(20|go|ma)|i230|iac( |\-|\/)|ibro|idea|ig01|ikom|im1k|inno|ipaq|iris|ja(t|v)a|jbro|jemu|jigs|kddi|keji|kgt( |\/)|klon|kpt |kwc\-|kyo(c|k)|le(no|xi)|lg( g|\/(k|l|u)|50|54|\-[a-w])|libw|lynx|m1\-w|m3ga|m50\/|ma(te|ui|xo)|mc(01|21|ca)|m\-cr|me(rc|ri)|mi(o8|oa|ts)|mmef|mo(01|02|bi|de|do|t(\-| |o|v)|zz)|mt(50|p1|v )|mwbp|mywa|n10[0-2]|n20[2-3]|n30(0|2)|n50(0|2|5)|n7(0(0|1)|10)|ne((c|m)\-|on|tf|wf|wg|wt)|nok(6|i)|nzph|o2im|op(ti|wv)|oran|owg1|p800|pan(a|d|t)|pdxg|pg(13|\-([1-8]|c))|phil|pire|pl(ay|uc)|pn\-2|po(ck|rt|se)|prox|psio|pt\-g|qa\-a|qc(07|12|21|32|60|\-[2-7]|i\-)|qtek|r380|r600|raks|rim9|ro(ve|zo)|s55\/|sa(ge|ma|mm|ms|ny|va)|sc(01|h\-|oo|p\-)|sdk\/|se(c(\-|0|1)|47|mc|nd|ri)|sgh\-|shar|sie(\-|m)|sk\-0|sl(45|id)|sm(al|ar|b3|it|t5)|so(ft|ny)|sp(01|h\-|v\-|v )|sy(01|mb)|t2(18|50)|t6(00|10|18)|ta(gt|lk)|tcl\-|tdg\-|tel(i|m)|tim\-|t\-mo|to(pl|sh)|ts(70|m\-|m3|m5)|tx\-9|up(\.b|g1|si)|utst|v400|v750|veri|vi(rg|te)|vk(40|5[0-3]|\-v)|vm40|voda|vulc|vx(52|53|60|61|70|80|81|83|85|98)|w3c(\-| )|webc|whit|wi(g |nc|nw)|wmlb|wonu|x700|yas\-|your|zeto|zte\-/i.test(a.substr(0, 4));
+}
+
+function format(text, args, remove = false) {
+  if (typeof args !== "object" || !args || !text) return text;
+  return text.replace(/\{([a-zA-Z0-9_.,=)( ]+)\}/g, function (m, n) {
+    let value = getValue(n, args);
+    return value !== undefined ? value : remove ? "" : m;
+  });
+}
+
+function getValue(path, args) {
+  let arr = path.split(".");
+  let current = args;
+
+  for (let i = 0; i < arr.length; i++) {
+    if (current !== undefined) {
+      current = current[arr[i]];
+    } else {
+      return undefined;
+    }
+  }
+
+  return current;
+}
+
+function submitValidation(pool) {
+  return !pool.reduce((a, v) => a + +!v, 0);
+}
+
+function debonce(value) {
+  return function (target, prop, descriptor) {
+    let lastCall = 0;
+    return Object.assign(Object.assign({}, descriptor), {
+      value: function (...args) {
+        if (Date.now() - lastCall < value) {
+          return;
+        }
+
+        lastCall = Date.now();
+        return descriptor.value.call(this, ...args);
+      }
+    });
+  };
+}
+
+function setCookie(name, value, options = {}) {
+  options = Object.assign({
+    path: '/',
+    "max-age": 84600 * 365,
+    secure: true
+  }, options);
+
+  if (options.expires instanceof Date) {
+    options.expires = options.expires.toUTCString();
+  }
+
+  let updatedCookie = encodeURIComponent(name) + "=" + encodeURIComponent(value);
+
+  for (let optionKey in options) {
+    updatedCookie += "; " + optionKey;
+    let optionValue = options[optionKey];
+
+    if (optionValue !== true) {
+      updatedCookie += "=" + optionValue;
+    }
+  }
+
+  document.cookie = updatedCookie;
+}
+
+function getCookie(name) {
+  let matches = document.cookie.match(new RegExp("(?:^|; )" + name.replace(/([\.$?*|{}\(\)\[\]\\\/\+^])/g, '\\$1') + "=([^;]*)"));
+  return matches ? decodeURIComponent(matches[1]) : "";
+}
+
+function deleteAllCookies() {
+  let cookies = document.cookie.split(";");
+
+  for (let i = 0; i < cookies.length; i++) {
+    let cookie = cookies[i];
+    let eqPos = cookie.indexOf("=");
+    let name = eqPos > -1 ? cookie.substr(0, eqPos) : cookie;
+    document.cookie = name + "=;expires=Thu, 01 Jan 1970 00:00:00 GMT";
+  }
+}
+
+function stringToHex(str) {
+  let result = "";
+
+  for (let i = 0; i < str.length; i++) {
+    result += str.charCodeAt(i).toString(16);
+  }
+
+  return "0x" + result;
+}
+
+function hexTostring(str) {
+  let hexes = str.match(/.{1,4}/g) || [];
+  let back = "";
+
+  for (let j = 0; j < hexes.length; j++) {
+    back += String.fromCharCode(parseInt(hexes[j], 16));
+  }
+
+  return back;
+}
+
+function getTopic(str) {
+  const string = stringToHex(str);
+  return string + "0".repeat(66 - string.length);
+}
+
+function getScrollbarWidth() {
+  return window.innerWidth - document.body.clientWidth;
+}
+},{}],"../src/styles.ts":[function(require,module,exports) {
+"use strict";
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.DIALOG_STYLES = void 0;
+
+var _lit = require("lit");
+
+var _templateObject;
+
+function _taggedTemplateLiteral(strings, raw) { if (!raw) { raw = strings.slice(0); } return Object.freeze(Object.defineProperties(strings, { raw: { value: Object.freeze(raw) } })); }
+
+var DIALOG_STYLES = (0, _lit.css)(_templateObject || (_templateObject = _taggedTemplateLiteral(["\n.overlap{\n    margin: 0;\n    top: 0;\n    padding: 0;\n    width: 100%;\n    height: 100vh;\n    position: fixed;\n    z-index: 100;\n    background-color: var(--modal-overlap, rgba(0,0,0,0.7));\n    color: black;\n    display: flex;\n    align-items: center;\n    justify-content: center;\n    visibility: hidden\n}\n.overlap.visible{\n    visibility: visible;\n}\n.dialog{          \n    position: relative;  \n    width: var(--modal-dialog-width, 700px);\n    height: var(--modal-dialog-height, 450px);\n    overflow-y: auto;\n    z-index: 101;\n    background-color: var(--modal-dialog-background, #fefefe);\n    border-radius: 3px;\n    box-sizing: border-box;\n    word-wrap: break-word;\n    display: flex;\n    flex-direction: column;                        \n    box-shadow: 1px 1px 8px var(--modal-dialog-boxshadow, rgba(0,0,0,0.7));\n}\nheader{\n    position: relative;\n    background-color: var(--modal-header-background, #111);\n    color: var(--modal-header-color, #fefefe);\n    font-size: 16px;\n}\nheader h1, header h2, header h3, header h4{\n    margin: 0;\n}\nmain{\n    padding: 15px 20px;\n    flex: 1 1 auto;\n}\nheader, main, footer{\n    padding: 15px 20px;\n}\nfooter{\n    display: flex;\n    justify-content: space-between;\n}\nbutton{\n    background-color: var(--button-background, #222);\n    border: var(--button-border, none);\n    color: var(--button-color, #fefefe);\n    padding: var(--button-padding, 5px 10px);\n    cursor: pointer;\n}\nbutton:hover{\n    background-color: var(--button-background-hover, #444);\n}\nbutton.primary{\n    color: var(--button-primary-color, #444);\n    background-color: var(--button-primary-background, #444);\n}\nbutton.primary:hover{\n    background-color: var(--button-primary-background-hover, #444);\n}\n.close-icon{\n    position: absolute;\n    padding: 10px;\n    right: 2px;\n    top: -2px;\n    cursor: pointer;\n}\n.close-icon svg{\n    fill: #888;\n}\n"])));
+exports.DIALOG_STYLES = DIALOG_STYLES;
+},{"lit":"../node_modules/lit/index.js"}],"../node_modules/lit-html/lib/dom.js":[function(require,module,exports) {
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -732,40 +2489,6 @@ const removeNodes = (container, start, end = null) => {
 };
 
 exports.removeNodes = removeNodes;
-},{}],"../node_modules/lit-html/lib/part.js":[function(require,module,exports) {
-"use strict";
-
-Object.defineProperty(exports, "__esModule", {
-  value: true
-});
-exports.nothing = exports.noChange = void 0;
-
-/**
- * @license
- * Copyright (c) 2018 The Polymer Project Authors. All rights reserved.
- * This code may only be used under the BSD style license found at
- * http://polymer.github.io/LICENSE.txt
- * The complete set of authors may be found at
- * http://polymer.github.io/AUTHORS.txt
- * The complete set of contributors may be found at
- * http://polymer.github.io/CONTRIBUTORS.txt
- * Code distributed by Google as part of the polymer project is also
- * subject to an additional IP rights grant found at
- * http://polymer.github.io/PATENTS.txt
- */
-
-/**
- * A sentinel value that signals that a value was handled by a directive and
- * should not be written to the DOM.
- */
-const noChange = {};
-/**
- * A sentinel value that signals a NodePart to fully clear its content.
- */
-
-exports.noChange = noChange;
-const nothing = {};
-exports.nothing = nothing;
 },{}],"../node_modules/lit-html/lib/template.js":[function(require,module,exports) {
 "use strict";
 
@@ -1048,6 +2771,284 @@ exports.createMarker = createMarker;
 const lastAttributeNameRegex = // eslint-disable-next-line no-control-regex
 /([ \x09\x0a\x0c\x0d])([^\0-\x1F\x7F-\x9F "'>=/]+)([ \x09\x0a\x0c\x0d]*=[ \x09\x0a\x0c\x0d]*(?:[^ \x09\x0a\x0c\x0d"'`<>=]*|"[^"]*|'[^']*))$/;
 exports.lastAttributeNameRegex = lastAttributeNameRegex;
+},{}],"../node_modules/lit-html/lib/modify-template.js":[function(require,module,exports) {
+"use strict";
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.removeNodesFromTemplate = removeNodesFromTemplate;
+exports.insertNodeIntoTemplate = insertNodeIntoTemplate;
+
+var _template = require("./template.js");
+
+/**
+ * @license
+ * Copyright (c) 2017 The Polymer Project Authors. All rights reserved.
+ * This code may only be used under the BSD style license found at
+ * http://polymer.github.io/LICENSE.txt
+ * The complete set of authors may be found at
+ * http://polymer.github.io/AUTHORS.txt
+ * The complete set of contributors may be found at
+ * http://polymer.github.io/CONTRIBUTORS.txt
+ * Code distributed by Google as part of the polymer project is also
+ * subject to an additional IP rights grant found at
+ * http://polymer.github.io/PATENTS.txt
+ */
+const walkerNodeFilter = 133
+/* NodeFilter.SHOW_{ELEMENT|COMMENT|TEXT} */
+;
+/**
+ * Removes the list of nodes from a Template safely. In addition to removing
+ * nodes from the Template, the Template part indices are updated to match
+ * the mutated Template DOM.
+ *
+ * As the template is walked the removal state is tracked and
+ * part indices are adjusted as needed.
+ *
+ * div
+ *   div#1 (remove) <-- start removing (removing node is div#1)
+ *     div
+ *       div#2 (remove)  <-- continue removing (removing node is still div#1)
+ *         div
+ * div <-- stop removing since previous sibling is the removing node (div#1,
+ * removed 4 nodes)
+ */
+
+function removeNodesFromTemplate(template, nodesToRemove) {
+  const {
+    element: {
+      content
+    },
+    parts
+  } = template;
+  const walker = document.createTreeWalker(content, walkerNodeFilter, null, false);
+  let partIndex = nextActiveIndexInTemplateParts(parts);
+  let part = parts[partIndex];
+  let nodeIndex = -1;
+  let removeCount = 0;
+  const nodesToRemoveInTemplate = [];
+  let currentRemovingNode = null;
+
+  while (walker.nextNode()) {
+    nodeIndex++;
+    const node = walker.currentNode; // End removal if stepped past the removing node
+
+    if (node.previousSibling === currentRemovingNode) {
+      currentRemovingNode = null;
+    } // A node to remove was found in the template
+
+
+    if (nodesToRemove.has(node)) {
+      nodesToRemoveInTemplate.push(node); // Track node we're removing
+
+      if (currentRemovingNode === null) {
+        currentRemovingNode = node;
+      }
+    } // When removing, increment count by which to adjust subsequent part indices
+
+
+    if (currentRemovingNode !== null) {
+      removeCount++;
+    }
+
+    while (part !== undefined && part.index === nodeIndex) {
+      // If part is in a removed node deactivate it by setting index to -1 or
+      // adjust the index as needed.
+      part.index = currentRemovingNode !== null ? -1 : part.index - removeCount; // go to the next active part.
+
+      partIndex = nextActiveIndexInTemplateParts(parts, partIndex);
+      part = parts[partIndex];
+    }
+  }
+
+  nodesToRemoveInTemplate.forEach(n => n.parentNode.removeChild(n));
+}
+
+const countNodes = node => {
+  let count = node.nodeType === 11
+  /* Node.DOCUMENT_FRAGMENT_NODE */
+  ? 0 : 1;
+  const walker = document.createTreeWalker(node, walkerNodeFilter, null, false);
+
+  while (walker.nextNode()) {
+    count++;
+  }
+
+  return count;
+};
+
+const nextActiveIndexInTemplateParts = (parts, startIndex = -1) => {
+  for (let i = startIndex + 1; i < parts.length; i++) {
+    const part = parts[i];
+
+    if ((0, _template.isTemplatePartActive)(part)) {
+      return i;
+    }
+  }
+
+  return -1;
+};
+/**
+ * Inserts the given node into the Template, optionally before the given
+ * refNode. In addition to inserting the node into the Template, the Template
+ * part indices are updated to match the mutated Template DOM.
+ */
+
+
+function insertNodeIntoTemplate(template, node, refNode = null) {
+  const {
+    element: {
+      content
+    },
+    parts
+  } = template; // If there's no refNode, then put node at end of template.
+  // No part indices need to be shifted in this case.
+
+  if (refNode === null || refNode === undefined) {
+    content.appendChild(node);
+    return;
+  }
+
+  const walker = document.createTreeWalker(content, walkerNodeFilter, null, false);
+  let partIndex = nextActiveIndexInTemplateParts(parts);
+  let insertCount = 0;
+  let walkerIndex = -1;
+
+  while (walker.nextNode()) {
+    walkerIndex++;
+    const walkerNode = walker.currentNode;
+
+    if (walkerNode === refNode) {
+      insertCount = countNodes(node);
+      refNode.parentNode.insertBefore(node, refNode);
+    }
+
+    while (partIndex !== -1 && parts[partIndex].index === walkerIndex) {
+      // If we've inserted the node, simply adjust all subsequent parts
+      if (insertCount > 0) {
+        while (partIndex !== -1) {
+          parts[partIndex].index += insertCount;
+          partIndex = nextActiveIndexInTemplateParts(parts, partIndex);
+        }
+
+        return;
+      }
+
+      partIndex = nextActiveIndexInTemplateParts(parts, partIndex);
+    }
+  }
+}
+},{"./template.js":"../node_modules/lit-html/lib/template.js"}],"../node_modules/lit-html/lib/directive.js":[function(require,module,exports) {
+"use strict";
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.isDirective = exports.directive = void 0;
+
+/**
+ * @license
+ * Copyright (c) 2017 The Polymer Project Authors. All rights reserved.
+ * This code may only be used under the BSD style license found at
+ * http://polymer.github.io/LICENSE.txt
+ * The complete set of authors may be found at
+ * http://polymer.github.io/AUTHORS.txt
+ * The complete set of contributors may be found at
+ * http://polymer.github.io/CONTRIBUTORS.txt
+ * Code distributed by Google as part of the polymer project is also
+ * subject to an additional IP rights grant found at
+ * http://polymer.github.io/PATENTS.txt
+ */
+const directives = new WeakMap();
+/**
+ * Brands a function as a directive factory function so that lit-html will call
+ * the function during template rendering, rather than passing as a value.
+ *
+ * A _directive_ is a function that takes a Part as an argument. It has the
+ * signature: `(part: Part) => void`.
+ *
+ * A directive _factory_ is a function that takes arguments for data and
+ * configuration and returns a directive. Users of directive usually refer to
+ * the directive factory as the directive. For example, "The repeat directive".
+ *
+ * Usually a template author will invoke a directive factory in their template
+ * with relevant arguments, which will then return a directive function.
+ *
+ * Here's an example of using the `repeat()` directive factory that takes an
+ * array and a function to render an item:
+ *
+ * ```js
+ * html`<ul><${repeat(items, (item) => html`<li>${item}</li>`)}</ul>`
+ * ```
+ *
+ * When `repeat` is invoked, it returns a directive function that closes over
+ * `items` and the template function. When the outer template is rendered, the
+ * return directive function is called with the Part for the expression.
+ * `repeat` then performs it's custom logic to render multiple items.
+ *
+ * @param f The directive factory function. Must be a function that returns a
+ * function of the signature `(part: Part) => void`. The returned function will
+ * be called with the part object.
+ *
+ * @example
+ *
+ * import {directive, html} from 'lit-html';
+ *
+ * const immutable = directive((v) => (part) => {
+ *   if (part.value !== v) {
+ *     part.setValue(v)
+ *   }
+ * });
+ */
+
+const directive = f => (...args) => {
+  const d = f(...args);
+  directives.set(d, true);
+  return d;
+};
+
+exports.directive = directive;
+
+const isDirective = o => {
+  return typeof o === 'function' && directives.has(o);
+};
+
+exports.isDirective = isDirective;
+},{}],"../node_modules/lit-html/lib/part.js":[function(require,module,exports) {
+"use strict";
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.nothing = exports.noChange = void 0;
+
+/**
+ * @license
+ * Copyright (c) 2018 The Polymer Project Authors. All rights reserved.
+ * This code may only be used under the BSD style license found at
+ * http://polymer.github.io/LICENSE.txt
+ * The complete set of authors may be found at
+ * http://polymer.github.io/AUTHORS.txt
+ * The complete set of contributors may be found at
+ * http://polymer.github.io/CONTRIBUTORS.txt
+ * Code distributed by Google as part of the polymer project is also
+ * subject to an additional IP rights grant found at
+ * http://polymer.github.io/PATENTS.txt
+ */
+
+/**
+ * A sentinel value that signals that a value was handled by a directive and
+ * should not be written to the DOM.
+ */
+const noChange = {};
+/**
+ * A sentinel value that signals a NodePart to fully clear its content.
+ */
+
+exports.noChange = noChange;
+const nothing = {};
+exports.nothing = nothing;
 },{}],"../node_modules/lit-html/lib/template-instance.js":[function(require,module,exports) {
 "use strict";
 
@@ -1949,78 +3950,7 @@ const getOptions = o => o && (eventOptionsSupported ? {
   passive: o.passive,
   once: o.once
 } : o.capture);
-},{"./directive.js":"../node_modules/lit-html/lib/directive.js","./dom.js":"../node_modules/lit-html/lib/dom.js","./part.js":"../node_modules/lit-html/lib/part.js","./template-instance.js":"../node_modules/lit-html/lib/template-instance.js","./template-result.js":"../node_modules/lit-html/lib/template-result.js","./template.js":"../node_modules/lit-html/lib/template.js"}],"../node_modules/lit-html/lib/default-template-processor.js":[function(require,module,exports) {
-"use strict";
-
-Object.defineProperty(exports, "__esModule", {
-  value: true
-});
-exports.defaultTemplateProcessor = exports.DefaultTemplateProcessor = void 0;
-
-var _parts = require("./parts.js");
-
-/**
- * @license
- * Copyright (c) 2017 The Polymer Project Authors. All rights reserved.
- * This code may only be used under the BSD style license found at
- * http://polymer.github.io/LICENSE.txt
- * The complete set of authors may be found at
- * http://polymer.github.io/AUTHORS.txt
- * The complete set of contributors may be found at
- * http://polymer.github.io/CONTRIBUTORS.txt
- * Code distributed by Google as part of the polymer project is also
- * subject to an additional IP rights grant found at
- * http://polymer.github.io/PATENTS.txt
- */
-
-/**
- * Creates Parts when a template is instantiated.
- */
-class DefaultTemplateProcessor {
-  /**
-   * Create parts for an attribute-position binding, given the event, attribute
-   * name, and string literals.
-   *
-   * @param element The element containing the binding
-   * @param name  The attribute name
-   * @param strings The string literals. There are always at least two strings,
-   *   event for fully-controlled bindings with a single expression.
-   */
-  handleAttributeExpressions(element, name, strings, options) {
-    const prefix = name[0];
-
-    if (prefix === '.') {
-      const committer = new _parts.PropertyCommitter(element, name.slice(1), strings);
-      return committer.parts;
-    }
-
-    if (prefix === '@') {
-      return [new _parts.EventPart(element, name.slice(1), options.eventContext)];
-    }
-
-    if (prefix === '?') {
-      return [new _parts.BooleanAttributePart(element, name.slice(1), strings)];
-    }
-
-    const committer = new _parts.AttributeCommitter(element, name, strings);
-    return committer.parts;
-  }
-  /**
-   * Create parts for a text-position binding.
-   * @param templateFactory
-   */
-
-
-  handleTextExpression(options) {
-    return new _parts.NodePart(options);
-  }
-
-}
-
-exports.DefaultTemplateProcessor = DefaultTemplateProcessor;
-const defaultTemplateProcessor = new DefaultTemplateProcessor();
-exports.defaultTemplateProcessor = defaultTemplateProcessor;
-},{"./parts.js":"../node_modules/lit-html/lib/parts.js"}],"../node_modules/lit-html/lib/template-factory.js":[function(require,module,exports) {
+},{"./directive.js":"../node_modules/lit-html/lib/directive.js","./dom.js":"../node_modules/lit-html/lib/dom.js","./part.js":"../node_modules/lit-html/lib/part.js","./template-instance.js":"../node_modules/lit-html/lib/template-instance.js","./template-result.js":"../node_modules/lit-html/lib/template-result.js","./template.js":"../node_modules/lit-html/lib/template.js"}],"../node_modules/lit-html/lib/template-factory.js":[function(require,module,exports) {
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -2148,7 +4078,78 @@ const render = (result, container, options) => {
 };
 
 exports.render = render;
-},{"./dom.js":"../node_modules/lit-html/lib/dom.js","./parts.js":"../node_modules/lit-html/lib/parts.js","./template-factory.js":"../node_modules/lit-html/lib/template-factory.js"}],"../node_modules/lit-html/lit-html.js":[function(require,module,exports) {
+},{"./dom.js":"../node_modules/lit-html/lib/dom.js","./parts.js":"../node_modules/lit-html/lib/parts.js","./template-factory.js":"../node_modules/lit-html/lib/template-factory.js"}],"../node_modules/lit-html/lib/default-template-processor.js":[function(require,module,exports) {
+"use strict";
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.defaultTemplateProcessor = exports.DefaultTemplateProcessor = void 0;
+
+var _parts = require("./parts.js");
+
+/**
+ * @license
+ * Copyright (c) 2017 The Polymer Project Authors. All rights reserved.
+ * This code may only be used under the BSD style license found at
+ * http://polymer.github.io/LICENSE.txt
+ * The complete set of authors may be found at
+ * http://polymer.github.io/AUTHORS.txt
+ * The complete set of contributors may be found at
+ * http://polymer.github.io/CONTRIBUTORS.txt
+ * Code distributed by Google as part of the polymer project is also
+ * subject to an additional IP rights grant found at
+ * http://polymer.github.io/PATENTS.txt
+ */
+
+/**
+ * Creates Parts when a template is instantiated.
+ */
+class DefaultTemplateProcessor {
+  /**
+   * Create parts for an attribute-position binding, given the event, attribute
+   * name, and string literals.
+   *
+   * @param element The element containing the binding
+   * @param name  The attribute name
+   * @param strings The string literals. There are always at least two strings,
+   *   event for fully-controlled bindings with a single expression.
+   */
+  handleAttributeExpressions(element, name, strings, options) {
+    const prefix = name[0];
+
+    if (prefix === '.') {
+      const committer = new _parts.PropertyCommitter(element, name.slice(1), strings);
+      return committer.parts;
+    }
+
+    if (prefix === '@') {
+      return [new _parts.EventPart(element, name.slice(1), options.eventContext)];
+    }
+
+    if (prefix === '?') {
+      return [new _parts.BooleanAttributePart(element, name.slice(1), strings)];
+    }
+
+    const committer = new _parts.AttributeCommitter(element, name, strings);
+    return committer.parts;
+  }
+  /**
+   * Create parts for a text-position binding.
+   * @param templateFactory
+   */
+
+
+  handleTextExpression(options) {
+    return new _parts.NodePart(options);
+  }
+
+}
+
+exports.DefaultTemplateProcessor = DefaultTemplateProcessor;
+const defaultTemplateProcessor = new DefaultTemplateProcessor();
+exports.defaultTemplateProcessor = defaultTemplateProcessor;
+},{"./parts.js":"../node_modules/lit-html/lib/parts.js"}],"../node_modules/lit-html/lit-html.js":[function(require,module,exports) {
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -2374,7 +4375,7 @@ var _template = require("./lib/template.js");
 // This line will be used in regexes to search for lit-html usage.
 // TODO(justinfagnani): inject version number at build time
 if (typeof window !== 'undefined') {
-  (window['litHtmlVersions'] || (window['litHtmlVersions'] = [])).push('1.3.0');
+  (window['litHtmlVersions'] || (window['litHtmlVersions'] = [])).push('1.4.1');
 }
 /**
  * Interprets a template literal as an HTML template that can efficiently
@@ -2394,175 +4395,7 @@ exports.html = html;
 const svg = (strings, ...values) => new _templateResult.SVGTemplateResult(strings, values, 'svg', _defaultTemplateProcessor.defaultTemplateProcessor);
 
 exports.svg = svg;
-},{"./lib/default-template-processor.js":"../node_modules/lit-html/lib/default-template-processor.js","./lib/template-result.js":"../node_modules/lit-html/lib/template-result.js","./lib/directive.js":"../node_modules/lit-html/lib/directive.js","./lib/dom.js":"../node_modules/lit-html/lib/dom.js","./lib/part.js":"../node_modules/lit-html/lib/part.js","./lib/parts.js":"../node_modules/lit-html/lib/parts.js","./lib/render.js":"../node_modules/lit-html/lib/render.js","./lib/template-factory.js":"../node_modules/lit-html/lib/template-factory.js","./lib/template-instance.js":"../node_modules/lit-html/lib/template-instance.js","./lib/template.js":"../node_modules/lit-html/lib/template.js"}],"../node_modules/lit-html/lib/modify-template.js":[function(require,module,exports) {
-"use strict";
-
-Object.defineProperty(exports, "__esModule", {
-  value: true
-});
-exports.removeNodesFromTemplate = removeNodesFromTemplate;
-exports.insertNodeIntoTemplate = insertNodeIntoTemplate;
-
-var _template = require("./template.js");
-
-/**
- * @license
- * Copyright (c) 2017 The Polymer Project Authors. All rights reserved.
- * This code may only be used under the BSD style license found at
- * http://polymer.github.io/LICENSE.txt
- * The complete set of authors may be found at
- * http://polymer.github.io/AUTHORS.txt
- * The complete set of contributors may be found at
- * http://polymer.github.io/CONTRIBUTORS.txt
- * Code distributed by Google as part of the polymer project is also
- * subject to an additional IP rights grant found at
- * http://polymer.github.io/PATENTS.txt
- */
-const walkerNodeFilter = 133
-/* NodeFilter.SHOW_{ELEMENT|COMMENT|TEXT} */
-;
-/**
- * Removes the list of nodes from a Template safely. In addition to removing
- * nodes from the Template, the Template part indices are updated to match
- * the mutated Template DOM.
- *
- * As the template is walked the removal state is tracked and
- * part indices are adjusted as needed.
- *
- * div
- *   div#1 (remove) <-- start removing (removing node is div#1)
- *     div
- *       div#2 (remove)  <-- continue removing (removing node is still div#1)
- *         div
- * div <-- stop removing since previous sibling is the removing node (div#1,
- * removed 4 nodes)
- */
-
-function removeNodesFromTemplate(template, nodesToRemove) {
-  const {
-    element: {
-      content
-    },
-    parts
-  } = template;
-  const walker = document.createTreeWalker(content, walkerNodeFilter, null, false);
-  let partIndex = nextActiveIndexInTemplateParts(parts);
-  let part = parts[partIndex];
-  let nodeIndex = -1;
-  let removeCount = 0;
-  const nodesToRemoveInTemplate = [];
-  let currentRemovingNode = null;
-
-  while (walker.nextNode()) {
-    nodeIndex++;
-    const node = walker.currentNode; // End removal if stepped past the removing node
-
-    if (node.previousSibling === currentRemovingNode) {
-      currentRemovingNode = null;
-    } // A node to remove was found in the template
-
-
-    if (nodesToRemove.has(node)) {
-      nodesToRemoveInTemplate.push(node); // Track node we're removing
-
-      if (currentRemovingNode === null) {
-        currentRemovingNode = node;
-      }
-    } // When removing, increment count by which to adjust subsequent part indices
-
-
-    if (currentRemovingNode !== null) {
-      removeCount++;
-    }
-
-    while (part !== undefined && part.index === nodeIndex) {
-      // If part is in a removed node deactivate it by setting index to -1 or
-      // adjust the index as needed.
-      part.index = currentRemovingNode !== null ? -1 : part.index - removeCount; // go to the next active part.
-
-      partIndex = nextActiveIndexInTemplateParts(parts, partIndex);
-      part = parts[partIndex];
-    }
-  }
-
-  nodesToRemoveInTemplate.forEach(n => n.parentNode.removeChild(n));
-}
-
-const countNodes = node => {
-  let count = node.nodeType === 11
-  /* Node.DOCUMENT_FRAGMENT_NODE */
-  ? 0 : 1;
-  const walker = document.createTreeWalker(node, walkerNodeFilter, null, false);
-
-  while (walker.nextNode()) {
-    count++;
-  }
-
-  return count;
-};
-
-const nextActiveIndexInTemplateParts = (parts, startIndex = -1) => {
-  for (let i = startIndex + 1; i < parts.length; i++) {
-    const part = parts[i];
-
-    if ((0, _template.isTemplatePartActive)(part)) {
-      return i;
-    }
-  }
-
-  return -1;
-};
-/**
- * Inserts the given node into the Template, optionally before the given
- * refNode. In addition to inserting the node into the Template, the Template
- * part indices are updated to match the mutated Template DOM.
- */
-
-
-function insertNodeIntoTemplate(template, node, refNode = null) {
-  const {
-    element: {
-      content
-    },
-    parts
-  } = template; // If there's no refNode, then put node at end of template.
-  // No part indices need to be shifted in this case.
-
-  if (refNode === null || refNode === undefined) {
-    content.appendChild(node);
-    return;
-  }
-
-  const walker = document.createTreeWalker(content, walkerNodeFilter, null, false);
-  let partIndex = nextActiveIndexInTemplateParts(parts);
-  let insertCount = 0;
-  let walkerIndex = -1;
-
-  while (walker.nextNode()) {
-    walkerIndex++;
-    const walkerNode = walker.currentNode;
-
-    if (walkerNode === refNode) {
-      insertCount = countNodes(node);
-      refNode.parentNode.insertBefore(node, refNode);
-    }
-
-    while (partIndex !== -1 && parts[partIndex].index === walkerIndex) {
-      // If we've inserted the node, simply adjust all subsequent parts
-      if (insertCount > 0) {
-        while (partIndex !== -1) {
-          parts[partIndex].index += insertCount;
-          partIndex = nextActiveIndexInTemplateParts(parts, partIndex);
-        }
-
-        return;
-      }
-
-      partIndex = nextActiveIndexInTemplateParts(parts, partIndex);
-    }
-  }
-}
-},{"./template.js":"../node_modules/lit-html/lib/template.js"}],"../node_modules/lit-html/lib/shady-render.js":[function(require,module,exports) {
+},{"./lib/default-template-processor.js":"../node_modules/lit-html/lib/default-template-processor.js","./lib/template-result.js":"../node_modules/lit-html/lib/template-result.js","./lib/directive.js":"../node_modules/lit-html/lib/directive.js","./lib/dom.js":"../node_modules/lit-html/lib/dom.js","./lib/part.js":"../node_modules/lit-html/lib/part.js","./lib/parts.js":"../node_modules/lit-html/lib/parts.js","./lib/render.js":"../node_modules/lit-html/lib/render.js","./lib/template-factory.js":"../node_modules/lit-html/lib/template-factory.js","./lib/template-instance.js":"../node_modules/lit-html/lib/template-instance.js","./lib/template.js":"../node_modules/lit-html/lib/template.js"}],"../node_modules/lit-html/lib/shady-render.js":[function(require,module,exports) {
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -2983,6 +4816,7 @@ const defaultConverter = {
 
       case Object:
       case Array:
+        // Type assert to adhere to Bazel's "must type assert JSON parse" rule.
         return JSON.parse(value);
     }
 
@@ -3624,10 +5458,33 @@ class UpdatingElement extends HTMLElement {
    *       await this._myChild.updateComplete;
    *     }
    *   }
+   * @deprecated Override `getUpdateComplete()` instead for forward
+   *     compatibility with `lit-element` 3.0 / `@lit/reactive-element`.
    */
 
 
   _getUpdateComplete() {
+    return this.getUpdateComplete();
+  }
+  /**
+   * Override point for the `updateComplete` promise.
+   *
+   * It is not safe to override the `updateComplete` getter directly due to a
+   * limitation in TypeScript which means it is not possible to call a
+   * superclass getter (e.g. `super.updateComplete.then(...)`) when the target
+   * language is ES5 (https://github.com/microsoft/TypeScript/issues/338).
+   * This method should be overridden instead. For example:
+   *
+   *   class MyElement extends LitElement {
+   *     async getUpdateComplete() {
+   *       await super.getUpdateComplete();
+   *       await this._myChild.updateComplete;
+   *     }
+   *   }
+   */
+
+
+  getUpdateComplete() {
     return this._updatePromise;
   }
   /**
@@ -3710,7 +5567,7 @@ exports.queryAsync = queryAsync;
 exports.queryAll = queryAll;
 exports.eventOptions = eventOptions;
 exports.queryAssignedNodes = queryAssignedNodes;
-exports.customElement = void 0;
+exports.state = exports.customElement = void 0;
 
 /**
  * @license
@@ -3849,8 +5706,10 @@ function property(options) {
  *
  * Properties declared this way must not be used from HTML or HTML templating
  * systems, they're solely for properties internal to the element. These
- * properties may be renamed by optimization tools like closure compiler.
+ * properties may be renamed by optimization tools like the Closure Compiler.
  * @category Decorator
+ * @deprecated `internalProperty` has been renamed to `state` in lit-element
+ *     3.0. Please update to `state` now to be compatible with 3.0.
  */
 
 
@@ -3860,6 +5719,18 @@ function internalProperty(options) {
     hasChanged: options === null || options === void 0 ? void 0 : options.hasChanged
   });
 }
+/**
+ * Declares a private or protected property that still triggers updates to the
+ * element when it changes.
+ *
+ * Properties declared this way must not be used from HTML or HTML templating
+ * systems, they're solely for properties internal to the element. These
+ * properties may be renamed by optimization tools like the Closure Compiler.
+ * @category Decorator
+ */
+
+
+const state = options => internalProperty(options);
 /**
  * A property decorator that converts a class property into a getter that
  * executes a querySelector on the element's renderRoot.
@@ -3889,6 +5760,8 @@ function internalProperty(options) {
  */
 
 
+exports.state = state;
+
 function query(selector, cache) {
   return (protoOrDescriptor, // tslint:disable-next-line:no-any decorator
   name) => {
@@ -3902,7 +5775,8 @@ function query(selector, cache) {
     };
 
     if (cache) {
-      const key = typeof name === 'symbol' ? Symbol() : `__${name}`;
+      const prop = name !== undefined ? name : protoOrDescriptor.key;
+      const key = typeof prop === 'symbol' ? Symbol() : `__${prop}`;
 
       descriptor.get = function () {
         if (this[key] === undefined) {
@@ -4123,7 +5997,8 @@ function queryAssignedNodes(slotName = '', flatten = false, selector = '') {
         });
 
         if (nodes && selector) {
-          nodes = nodes.filter(node => node.nodeType === Node.ELEMENT_NODE && node.matches ? node.matches(selector) : legacyMatches.call(node, selector));
+          nodes = nodes.filter(node => node.nodeType === Node.ELEMENT_NODE && ( // tslint:disable-next-line:no-any testing existence on older browsers
+          node.matches ? node.matches(selector) : legacyMatches.call(node, selector)));
         }
 
         return nodes;
@@ -4242,11 +6117,18 @@ Object.defineProperty(exports, "__esModule", {
 });
 var _exportNames = {
   LitElement: true,
+  ReactiveElement: true,
   html: true,
   svg: true,
   TemplateResult: true,
   SVGTemplateResult: true
 };
+Object.defineProperty(exports, "ReactiveElement", {
+  enumerable: true,
+  get: function () {
+    return _updatingElement.UpdatingElement;
+  }
+});
 Object.defineProperty(exports, "html", {
   enumerable: true,
   get: function () {
@@ -4378,7 +6260,7 @@ Object.keys(_cssTag).forEach(function (key) {
 // IMPORTANT: do not change the property name or the assignment expression.
 // This line will be used in regexes to search for LitElement usage.
 // TODO(justinfagnani): inject version number at build time
-(window['litElementVersions'] || (window['litElementVersions'] = [])).push('2.4.0');
+(window['litElementVersions'] || (window['litElementVersions'] = [])).push('2.5.1');
 /**
  * Sentinal value used to avoid calling lit-html's render function when
  * subclasses do not implement `render`
@@ -4490,9 +6372,7 @@ class LitElement extends _updatingElement.UpdatingElement {
 
 
   createRenderRoot() {
-    return this.attachShadow({
-      mode: 'open'
-    });
+    return this.attachShadow(this.constructor.shadowRootOptions);
   }
   /**
    * Applies styling to the element shadowRoot using the [[`styles`]]
@@ -4614,497 +6494,18 @@ LitElement['finalized'] = true;
  */
 
 LitElement.render = _shadyRender.render;
-},{"lit-html/lib/shady-render.js":"../node_modules/lit-html/lib/shady-render.js","./lib/updating-element.js":"../node_modules/lit-element/lib/updating-element.js","./lib/decorators.js":"../node_modules/lit-element/lib/decorators.js","lit-html/lit-html.js":"../node_modules/lit-html/lit-html.js","./lib/css-tag.js":"../node_modules/lit-element/lib/css-tag.js"}],"../node_modules/kailib/dist/index.js":[function(require,module,exports) {
+/** @nocollapse */
+
+LitElement.shadowRootOptions = {
+  mode: 'open'
+};
+},{"lit-html/lib/shady-render.js":"../node_modules/lit-html/lib/shady-render.js","./lib/updating-element.js":"../node_modules/lit-element/lib/updating-element.js","./lib/decorators.js":"../node_modules/lit-element/lib/decorators.js","lit-html/lit-html.js":"../node_modules/lit-html/lit-html.js","./lib/css-tag.js":"../node_modules/lit-element/lib/css-tag.js"}],"../src/styles-media.ts":[function(require,module,exports) {
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
   value: true
 });
-exports.parseDec = parseDec;
-exports.firstUpper = firstUpper;
-exports.pad = pad;
-exports.time2string = time2string;
-exports.hsl2rgb = hsl2rgb;
-exports.deepCopy = deepCopy;
-exports.getDigit = getDigit;
-exports.ceilMinify = ceilMinify;
-exports.syncObjects = syncObjects;
-exports.copy2Clipboard = copy2Clipboard;
-exports.getPeriod = getPeriod;
-exports.avarage = avarage;
-exports.parse = parse;
-exports.urlEncode = urlEncode;
-exports.isInt = isInt;
-exports.isOTP = isOTP;
-exports.isEmail = isEmail;
-exports.isPassword = isPassword;
-exports.getFormData = getFormData;
-exports.randomInt = randomInt;
-exports.mobileAndTabletCheck = mobileAndTabletCheck;
-exports.format = format;
-exports.getValue = getValue;
-exports.submitValidation = submitValidation;
-exports.debonce = debonce;
-exports.setCookie = setCookie;
-exports.getCookie = getCookie;
-exports.deleteAllCookies = deleteAllCookies;
-exports.stringToHex = stringToHex;
-exports.hexTostring = hexTostring;
-exports.getTopic = getTopic;
-exports.getScrollbarWidth = getScrollbarWidth;
-
-function parseDec(val) {
-  if (typeof val === 'number') {
-    return val;
-  }
-
-  val = val.replace(',', '.');
-  return parseFloat(val);
-}
-
-function firstUpper(text) {
-  return text[0].toUpperCase() + text.slice(1);
-}
-
-function pad(value, n) {
-  let string = String(value);
-
-  if (string.length < n) {
-    return "0".repeat(n - string.length) + string;
-  } else {
-    return string;
-  }
-}
-
-function time2string(timestamp, type = "smart") {
-  if (timestamp === 0) {
-    return '-';
-  }
-
-  let time = new Date(timestamp * 1000);
-  let now = Date.now();
-
-  if (timestamp === 0) {
-    return "-";
-  }
-
-  let d = pad(time.getDate(), 2);
-  let m = pad(time.getMonth() + 1, 2);
-  let y = time.getFullYear();
-  let h = pad(time.getHours(), 2);
-  let i = pad(time.getMinutes(), 2);
-
-  if (type === "without-year") {
-    return `${d}/${m} ${h}:${i}`;
-  } else if (type === "smart") {
-    if (now - timestamp * 1000 < 84600000) {
-      return `${h}:${i}`;
-    } else {
-      return `${d}/${m}`;
-    }
-  } else if (type === "short") {
-    return `${d}/${m}/${y}`;
-  } else {
-    return `${d}/${m}/${y} ${h}:${i}`;
-  }
-}
-
-function hsl2rgb(h, s, l, hex = true) {
-  let rgb = [];
-
-  try {
-    if (typeof h !== "number") {
-      h = parseInt(h);
-    }
-
-    if (typeof s !== "number") {
-      s = parseInt(s);
-    }
-
-    if (typeof l !== "number") {
-      l = parseInt(l);
-    }
-
-    if (s > 100) {
-      s = 100;
-    }
-
-    if (l > 100) {
-      l = 100;
-    }
-
-    h = h % 360;
-    s = s / 100;
-    l = l / 100;
-    let c, x, m;
-    c = (1 - Math.abs(2 * l - 1)) * s;
-    x = c * (1 - Math.abs(h / 60 % 2 - 1));
-    m = l - c / 2;
-    if (h >= 0 && h < 60) rgb = [c, x, 0];
-    if (h >= 60 && h < 120) rgb = [x, c, 0];
-    if (h >= 120 && h < 180) rgb = [0, c, x];
-    if (h >= 180 && h < 240) rgb = [0, x, c];
-    if (h >= 240 && h < 300) rgb = [x, 0, c];
-    if (h >= 300 && h < 360) rgb = [c, 0, x];
-    rgb[0] = Math.floor(255 * (rgb[0] + m));
-    rgb[1] = Math.floor(255 * (rgb[1] + m));
-    rgb[2] = Math.floor(255 * (rgb[2] + m));
-
-    if (hex) {
-      return "#" + pad(rgb[0].toString(16), 2) + pad(rgb[1].toString(16), 2) + pad(rgb[2].toString(16), 2);
-    } else {
-      return rgb;
-    }
-  } catch (e) {
-    if (!rgb) {
-      if (hex) {
-        return "#000000";
-      } else {
-        return [0, 0, 0];
-      }
-    }
-  }
-}
-
-function deepCopy(obj) {
-  if (Array.isArray(obj)) {
-    let newArray = [];
-
-    for (let i = 0; i < obj.length; i++) {
-      let item = obj[i];
-
-      if (typeof item === "object" && item !== null) {
-        newArray.push(deepCopy(item));
-      } else {
-        newArray.push(item);
-      }
-    }
-
-    return newArray;
-  } else if (typeof obj === "object") {
-    let data = {};
-
-    for (let key in obj) {
-      if (obj.hasOwnProperty(key)) {
-        let item = obj[key];
-
-        if (item !== null && typeof item === "object") {
-          data[key] = deepCopy(item);
-        } else {
-          data[key] = item;
-        }
-      }
-    }
-
-    return data;
-  } else {
-    return obj;
-  }
-}
-
-function getDigit(number) {
-  return Math.log(number) * Math.LOG10E | 0;
-}
-
-function ceilMinify(number, maxDigit) {
-  let digit = getDigit(number);
-
-  if (digit > maxDigit) {
-    let res = 0;
-    let addition = "";
-
-    if (digit > 18) {
-      res = number / 1000000000000000000000;
-      addition = " qi";
-    } else if (digit > 15) {
-      res = number / 1000000000000000000;
-      addition = " qa";
-    } else if (digit > 12) {
-      res = number / 1000000000000000;
-      addition = " tr";
-    } else if (digit > 9) {
-      res = number / 1000000000;
-      addition = " bn";
-    } else if (digit > 6) {
-      res = number / 1000000;
-      addition = " m";
-    } else if (digit > 3) {
-      res = number / 1000;
-      addition = " k";
-    } else {
-      res = number;
-    }
-
-    return [res, addition];
-  } else {
-    return [number, ""];
-  }
-}
-
-function syncObjects(source, target) {
-  for (let key in source) {
-    if (source.hasOwnProperty(key)) {
-      if (!target[key]) {
-        target[key] = source[key];
-      } else if (typeof source[key] === "object" && typeof target[key] === "object") {
-        syncObjects(source[key], target[key]);
-      }
-    }
-  }
-
-  return target;
-}
-
-function copy2Clipboard(text = "_") {
-  let $input = document.createElement("input");
-  $input.setAttribute("type", "text");
-  $input.setAttribute("style", "position: absolute; z-index:-1");
-  $input.value = text;
-  document.body.appendChild($input);
-  $input.select();
-  document.execCommand("copy");
-  $input.remove();
-}
-
-function getPeriod(period = "D") {
-  if (period === "M1") {
-    return 60;
-  } else if (period === "M5") {
-    return 60 * 5;
-  } else if (period === "M15") {
-    return 60 * 15;
-  } else if (period === "M30") {
-    return 60 * 30;
-  } else if (period === "H1") {
-    return 60 * 60;
-  } else if (period === "H2") {
-    return 60 * 120;
-  } else if (period === "H4") {
-    return 60 * 240;
-  } else if (period === "D") {
-    return 60 * 1440;
-  } else if (period === "W") {
-    return 60 * 10080;
-  }
-}
-
-function avarage(array) {
-  if (!Array.isArray(array)) {
-    return false;
-  }
-
-  let sum = 0;
-
-  for (let i = 0; i < array.length; i++) {
-    sum += array[i];
-  }
-
-  return sum / array.length;
-}
-
-function parse(str) {
-  if (typeof str === 'string') {
-    try {
-      str = JSON.parse(str);
-    } catch (e) {
-      return str;
-    }
-  }
-
-  return str;
-}
-
-function urlEncode(params) {
-  let resString = [];
-
-  for (let k in params) {
-    if (params.hasOwnProperty(k)) {
-      let val = typeof params[k] === "object" ? JSON.stringify(params[k]) : params[k];
-      resString.push(k + '=' + encodeURIComponent(val));
-    }
-  }
-
-  return resString.join('&');
-}
-
-function isInt(value) {
-  return typeof value === "number" && Math.floor(value) === value;
-}
-
-function isOTP(value) {
-  return typeof value === "number" && value.toString().length === 6;
-}
-
-function isEmail(email) {
-  const re = /^(([^<>()[\]\\.,;:\s@\"]+(\.[^<>()[\]\\.,;:\s@\"]+)*)|(\".+\"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/;
-  return typeof email === "string" && re.test(email);
-}
-
-function isPassword(password) {
-  return typeof password === "string" && password.length > 6;
-}
-
-function getFormData(form) {
-  let params = {};
-
-  if (form instanceof HTMLFormElement) {
-    for (let i = 0; i < form.elements.length; i++) {
-      let el = form.elements[i]; // @ts-ignore
-
-      if (!el.name) continue;
-
-      if (el instanceof HTMLInputElement && el.type === "radio" && el.checked) {
-        params[el.name] = el.value;
-      } else if (el instanceof HTMLInputElement && el.type === "file") {
-        params[el.name] = el.files;
-      } else if (el instanceof HTMLInputElement) {
-        if (el.type === "checkbox") {
-          params[el.name] = el.checked;
-        } else if (el.type === "number") {
-          params[el.name] = Number(el.value);
-        } else {
-          params[el.name] = el.value.trim();
-        }
-      } else if (el instanceof HTMLTextAreaElement || el instanceof HTMLSelectElement) {
-        params[el.name] = el.value.trim();
-      }
-    }
-  }
-
-  return params;
-}
-
-function randomInt(min, max) {
-  return Math.round(min + Math.random() * (max - min));
-}
-
-function mobileAndTabletCheck() {
-  let check = false; //@ts-ignore
-
-  const a = navigator.userAgent || navigator.vendor || window['opera'];
-  return /(android|bb\d+|meego).+mobile|avantgo|bada\/|blackberry|blazer|compal|elaine|fennec|hiptop|iemobile|ip(hone|od)|iris|kindle|lge |maemo|midp|mmp|mobile.+firefox|netfront|opera m(ob|in)i|palm( os)?|phone|p(ixi|re)\/|plucker|pocket|psp|series(4|6)0|symbian|treo|up\.(browser|link)|vodafone|wap|windows ce|xda|xiino|android|ipad|playbook|silk/i.test(a) || /1207|6310|6590|3gso|4thp|50[1-6]i|770s|802s|a wa|abac|ac(er|oo|s\-)|ai(ko|rn)|al(av|ca|co)|amoi|an(ex|ny|yw)|aptu|ar(ch|go)|as(te|us)|attw|au(di|\-m|r |s )|avan|be(ck|ll|nq)|bi(lb|rd)|bl(ac|az)|br(e|v)w|bumb|bw\-(n|u)|c55\/|capi|ccwa|cdm\-|cell|chtm|cldc|cmd\-|co(mp|nd)|craw|da(it|ll|ng)|dbte|dc\-s|devi|dica|dmob|do(c|p)o|ds(12|\-d)|el(49|ai)|em(l2|ul)|er(ic|k0)|esl8|ez([4-7]0|os|wa|ze)|fetc|fly(\-|_)|g1 u|g560|gene|gf\-5|g\-mo|go(\.w|od)|gr(ad|un)|haie|hcit|hd\-(m|p|t)|hei\-|hi(pt|ta)|hp( i|ip)|hs\-c|ht(c(\-| |_|a|g|p|s|t)|tp)|hu(aw|tc)|i\-(20|go|ma)|i230|iac( |\-|\/)|ibro|idea|ig01|ikom|im1k|inno|ipaq|iris|ja(t|v)a|jbro|jemu|jigs|kddi|keji|kgt( |\/)|klon|kpt |kwc\-|kyo(c|k)|le(no|xi)|lg( g|\/(k|l|u)|50|54|\-[a-w])|libw|lynx|m1\-w|m3ga|m50\/|ma(te|ui|xo)|mc(01|21|ca)|m\-cr|me(rc|ri)|mi(o8|oa|ts)|mmef|mo(01|02|bi|de|do|t(\-| |o|v)|zz)|mt(50|p1|v )|mwbp|mywa|n10[0-2]|n20[2-3]|n30(0|2)|n50(0|2|5)|n7(0(0|1)|10)|ne((c|m)\-|on|tf|wf|wg|wt)|nok(6|i)|nzph|o2im|op(ti|wv)|oran|owg1|p800|pan(a|d|t)|pdxg|pg(13|\-([1-8]|c))|phil|pire|pl(ay|uc)|pn\-2|po(ck|rt|se)|prox|psio|pt\-g|qa\-a|qc(07|12|21|32|60|\-[2-7]|i\-)|qtek|r380|r600|raks|rim9|ro(ve|zo)|s55\/|sa(ge|ma|mm|ms|ny|va)|sc(01|h\-|oo|p\-)|sdk\/|se(c(\-|0|1)|47|mc|nd|ri)|sgh\-|shar|sie(\-|m)|sk\-0|sl(45|id)|sm(al|ar|b3|it|t5)|so(ft|ny)|sp(01|h\-|v\-|v )|sy(01|mb)|t2(18|50)|t6(00|10|18)|ta(gt|lk)|tcl\-|tdg\-|tel(i|m)|tim\-|t\-mo|to(pl|sh)|ts(70|m\-|m3|m5)|tx\-9|up(\.b|g1|si)|utst|v400|v750|veri|vi(rg|te)|vk(40|5[0-3]|\-v)|vm40|voda|vulc|vx(52|53|60|61|70|80|81|83|85|98)|w3c(\-| )|webc|whit|wi(g |nc|nw)|wmlb|wonu|x700|yas\-|your|zeto|zte\-/i.test(a.substr(0, 4));
-}
-
-function format(text, args, remove = false) {
-  if (typeof args !== "object" || !args || !text) return text;
-  return text.replace(/\{([a-zA-Z0-9_.,=)( ]+)\}/g, function (m, n) {
-    let value = getValue(n, args);
-    return value !== undefined ? value : remove ? "" : m;
-  });
-}
-
-function getValue(path, args) {
-  let arr = path.split(".");
-  let current = args;
-
-  for (let i = 0; i < arr.length; i++) {
-    if (current !== undefined) {
-      current = current[arr[i]];
-    } else {
-      return undefined;
-    }
-  }
-
-  return current;
-}
-
-function submitValidation(pool) {
-  return !pool.reduce((a, v) => a + +!v, 0);
-}
-
-function debonce(value) {
-  return function (target, prop, descriptor) {
-    let lastCall = 0;
-    return Object.assign(Object.assign({}, descriptor), {
-      value: function (...args) {
-        if (Date.now() - lastCall < value) {
-          return;
-        }
-
-        lastCall = Date.now();
-        return descriptor.value.call(this, ...args);
-      }
-    });
-  };
-}
-
-function setCookie(name, value, options = {}) {
-  options = Object.assign({
-    path: '/',
-    "max-age": 84600 * 365,
-    secure: true
-  }, options);
-
-  if (options.expires instanceof Date) {
-    options.expires = options.expires.toUTCString();
-  }
-
-  let updatedCookie = encodeURIComponent(name) + "=" + encodeURIComponent(value);
-
-  for (let optionKey in options) {
-    updatedCookie += "; " + optionKey;
-    let optionValue = options[optionKey];
-
-    if (optionValue !== true) {
-      updatedCookie += "=" + optionValue;
-    }
-  }
-
-  document.cookie = updatedCookie;
-}
-
-function getCookie(name) {
-  let matches = document.cookie.match(new RegExp("(?:^|; )" + name.replace(/([\.$?*|{}\(\)\[\]\\\/\+^])/g, '\\$1') + "=([^;]*)"));
-  return matches ? decodeURIComponent(matches[1]) : "";
-}
-
-function deleteAllCookies() {
-  let cookies = document.cookie.split(";");
-
-  for (let i = 0; i < cookies.length; i++) {
-    let cookie = cookies[i];
-    let eqPos = cookie.indexOf("=");
-    let name = eqPos > -1 ? cookie.substr(0, eqPos) : cookie;
-    document.cookie = name + "=;expires=Thu, 01 Jan 1970 00:00:00 GMT";
-  }
-}
-
-function stringToHex(str) {
-  let result = "";
-
-  for (let i = 0; i < str.length; i++) {
-    result += str.charCodeAt(i).toString(16);
-  }
-
-  return "0x" + result;
-}
-
-function hexTostring(str) {
-  let hexes = str.match(/.{1,4}/g) || [];
-  let back = "";
-
-  for (let j = 0; j < hexes.length; j++) {
-    back += String.fromCharCode(parseInt(hexes[j], 16));
-  }
-
-  return back;
-}
-
-function getTopic(str) {
-  const string = stringToHex(str);
-  return string + "0".repeat(66 - string.length);
-}
-
-function getScrollbarWidth() {
-  return window.innerWidth - document.body.clientWidth;
-}
-},{}],"../src/styles.ts":[function(require,module,exports) {
-"use strict";
-
-Object.defineProperty(exports, "__esModule", {
-  value: true
-});
-exports.DIALOG_STYLES = void 0;
+exports.DIALOG_MEDIASTYLES = void 0;
 
 var _litElement = require("lit-element");
 
@@ -5112,27 +6513,35 @@ var _templateObject;
 
 function _taggedTemplateLiteral(strings, raw) { if (!raw) { raw = strings.slice(0); } return Object.freeze(Object.defineProperties(strings, { raw: { value: Object.freeze(raw) } })); }
 
-var DIALOG_STYLES = (0, _litElement.css)(_templateObject || (_templateObject = _taggedTemplateLiteral(["\n.overlap{\n    margin: 0;\n    top: 0;\n    padding: 0;\n    width: 100%;\n    height: 100vh;\n    position: fixed;\n    z-index: 100;\n    background-color: var(--modal-overlap, rgba(0,0,0,0.7));\n    color: black;\n    display: flex;\n    align-items: center;\n    justify-content: center;\n    visibility: hidden\n}\n.overlap.visible{\n    visibility: visible;\n}\n.dialog{          \n    position: relative;  \n    width: 700px;\n    height: 450px;\n    overflow-y: auto;\n    z-index: 101;\n    background-color: var(--modal-dialog-background, #fefefe);\n    border-radius: 3px;\n    box-sizing: border-box;\n    word-wrap: break-word;\n    display: flex;\n    flex-direction: column;                        \n    box-shadow: 1px 1px 8px var(--modal-dialog-boxshadow, rgba(0,0,0,0.7));\n}\nheader{\n    position: relative;\n    background-color: var(--modal-header-background, #111);\n    color: var(--modal-header-color, #fefefe);\n    font-size: 16px;\n}\nheader h1, header h2, header h3, header h4{\n    margin: 0;\n}\nmain{\n    padding: 15px 20px;\n    flex: 1 1 auto;\n}\nheader, main, footer{\n    padding: 15px 20px;\n}\nfooter{\n    display: flex;\n    justify-content: space-between;\n}\nbutton{\n    background-color: var(--button-background, #222);\n    border: var(--button-border, none);\n    color: var(--button-color, #fefefe);\n    padding: var(--button-padding, 5px 10px);\n    cursor: pointer;\n}\nbutton:hover{\n    background-color: var(--button-background-hover, #444);\n}\n.close-icon{\n    position: absolute;\n    padding: 10px;\n    right: 2px;\n    top: -2px;\n    cursor: pointer;\n}\n.close-icon svg{\n    fill: #888;\n}\n"])));
-exports.DIALOG_STYLES = DIALOG_STYLES;
+var DIALOG_MEDIASTYLES = (0, _litElement.css)(_templateObject || (_templateObject = _taggedTemplateLiteral(["\n@media screen and (max-width: 600px){\n    :host{\n        --modal-dialog-width: calc(100% - 40px);\n    }\n}\n@media screen and (max-width: 360px){\n    :host{\n        --modal-dialog-width: 100%;\n    }\n}\n@media screen and (max-height: 450px){\n    :host{\n        --modal-dialog-height: 320px;\n    }\n}\n"])));
+exports.DIALOG_MEDIASTYLES = DIALOG_MEDIASTYLES;
 },{"lit-element":"../node_modules/lit-element/lit-element.js"}],"../src/index.ts":[function(require,module,exports) {
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
   value: true
 });
-exports.LitDialog = void 0;
+Object.defineProperty(exports, "DIALOG_MEDIASTYLES", {
+  enumerable: true,
+  get: function () {
+    return _stylesMedia.DIALOG_MEDIASTYLES;
+  }
+});
+exports.LitModal = void 0;
 
 var _tslib = require("tslib");
 
-var _litHtml = require("lit-html");
+var _lit = require("lit");
 
-var _litElement = require("lit-element");
+var _decorators = require("lit/decorators");
 
 var _kailib = require("kailib");
 
 var _styles = require("./styles");
 
-var _templateObject, _templateObject2, _templateObject3, _templateObject4;
+var _stylesMedia = require("./styles-media");
+
+var _templateObject, _templateObject2;
 
 function _typeof(obj) { "@babel/helpers - typeof"; if (typeof Symbol === "function" && typeof Symbol.iterator === "symbol") { _typeof = function _typeof(obj) { return typeof obj; }; } else { _typeof = function _typeof(obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; }; } return _typeof(obj); }
 
@@ -5161,90 +6570,137 @@ function _getPrototypeOf(o) { _getPrototypeOf = Object.setPrototypeOf ? Object.g
 //import { BUTTON_STYLES } from '../../styles/buttons';
 var isOpened = false;
 
-var LitDialog = /*#__PURE__*/function (_LitElement) {
-  _inherits(LitDialog, _LitElement);
+var LitModal = /*#__PURE__*/function (_LitElement) {
+  _inherits(LitModal, _LitElement);
 
-  var _super = _createSuper(LitDialog);
+  var _super = _createSuper(LitModal);
 
-  function LitDialog() {
+  function LitModal() {
     var _this;
 
-    _classCallCheck(this, LitDialog);
+    _classCallCheck(this, LitModal);
 
     _this = _super.apply(this, arguments);
     _this.header = null;
     _this.content = null;
     _this.footer = null;
-    _this.useStandartCloseBtn = true;
-    _this.closeBtnText = 'Close';
-    _this._open = false;
+    _this.closeBtnText = "Close";
+    _this.open = false;
+    _this.useCancelBtn = true;
+    _this._onHideEvents = [];
+    _this._onShowEvents = [];
+    _this._resolve = null;
+    _this._reject = null;
     return _this;
   }
 
-  _createClass(LitDialog, [{
-    key: "open",
-    get: function get() {
-      return this._open;
-    },
-    set: function set(value) {
-      if (isOpened && value) return;
-      var oldVal = this._open;
-      this._open = value;
-      isOpened = value;
-      value ? this.onShow() : this.onHide();
-      this.requestUpdate('open', oldVal);
-    }
-  }, {
-    key: "tCloseButtonText",
-    value: function tCloseButtonText() {
-      return null;
-    }
-  }, {
-    key: "_tHeader",
-    value: function _tHeader() {
-      return this.header ? (0, _litElement.html)(_templateObject || (_templateObject = _taggedTemplateLiteral(["<header>", "</header>"])), this.header ? this.header : _litHtml.nothing) : _litHtml.nothing;
-    }
-  }, {
-    key: "_tFooter",
-    value: function _tFooter() {
-      return (0, _litElement.html)(_templateObject2 || (_templateObject2 = _taggedTemplateLiteral(["        \n        <footer class = \"\">\n            ", "\n            ", "\n        </footer>"])), this.useStandartCloseBtn ? (0, _litElement.html)(_templateObject3 || (_templateObject3 = _taggedTemplateLiteral(["<button type = \"button\"\n                               class = \"button\"\n                               @click = \"", "\"\n                        >", "</button>"])), this.onClose, this.tCloseButtonText() || this.closeBtnText) : _litHtml.nothing, this.footer ? this.footer : _litHtml.nothing);
-    }
-  }, {
+  _createClass(LitModal, [{
     key: "render",
     value: function render() {
-      return (0, _litElement.html)(_templateObject4 || (_templateObject4 = _taggedTemplateLiteral(["\n        <div class = \"overlap ", "\">\n            <div class = \"dialog\">\n                ", "\n                <div class = \"close-icon\"\n                    @click = \"", "\">\n                    <svg width=\"17\" height=\"17\" viewBox=\"0 0 17 17\" xmlns=\"http://www.w3.org/2000/svg\">\n                        <rect width=\"2.8124\" height=\"21.0923\" rx=\"1.4062\" transform=\"matrix(0.712062 0.702117 -0.704224 0.709977 14.8538 0)\" />\n                        <rect width=\"2.8123\" height=\"21.093\" rx=\"1.40615\" transform=\"matrix(0.704224 -0.709977 0.712062 0.702117 0 2.19031)\" />\n                    </svg>\n                </div>\n                <main>\n                    <slot></slot>\n                    ", "\n                </main>\n                ", "\n            </div>\n        </div>"])), this.open ? 'visible' : '', this._tHeader(), this.onClose, this.content ? this.content : _litHtml.nothing, this._tFooter());
-    }
+      return (0, _lit.html)(_templateObject || (_templateObject = _taggedTemplateLiteral(["\n        <div @click = \"", "\" \n            class = \"overlap ", "\">\n            <div class = \"dialog\">\n                <header><slot name = \"header\"></slot></header>\n                <div class = \"close-icon\"\n                    @click = \"", "\">\n                    <svg width=\"17\" height=\"17\" viewBox=\"0 0 17 17\" xmlns=\"http://www.w3.org/2000/svg\">\n                        <rect width=\"2.8124\" height=\"21.0923\" rx=\"1.4062\" transform=\"matrix(0.712062 0.702117 -0.704224 0.709977 14.8538 0)\" />\n                        <rect width=\"2.8123\" height=\"21.093\" rx=\"1.40615\" transform=\"matrix(0.704224 -0.709977 0.712062 0.702117 0 2.19031)\" />\n                    </svg>\n                </div>\n                <main>\n                    <slot></slot>\n                </main>\n                <footer>\n                    ", "\n                    <slot name = \"footer\"></slot>\n                </footer>\n            </div>\n        </div>"])), this._onClick, this.open ? 'visible' : '', this._close, this.useCancelBtn ? (0, _lit.html)(_templateObject2 || (_templateObject2 = _taggedTemplateLiteral(["<slot name = \"closeBtn\">\n                                    <button type = \"button\"\n                                            class = \"button\"\n                                            @click = \"", "\"\n                                            >", "</button>\n                                </slot>"])), this._close, this.closeBtnText) : _lit.nothing);
+    } // **** Actions **** 
+
   }, {
-    key: "onShow",
-    value: function onShow() {
+    key: "_show",
+    value: function _show() {
       document.body.style.paddingRight = (0, _kailib.getScrollbarWidth)() + "px";
       document.body.style.overflow = 'hidden';
-      document.addEventListener("keydown", this.onKeypress.bind(this));
+      document.addEventListener("keydown", this._onKeypress.bind(this));
+      this.open = true;
     }
   }, {
-    key: "onHide",
-    value: function onHide() {
+    key: "_hide",
+    value: function _hide() {
+      var _a;
+
       document.body.style.paddingRight = "initial";
       document.body.style.overflow = 'initial';
-      document.removeEventListener("keydown", this.onKeypress);
+      document.removeEventListener("keydown", this._onKeypress);
+      (_a = this._reject) === null || _a === void 0 ? void 0 : _a.call(this);
       this.header = null;
       this.content = null;
       this.footer = null;
-      this.useStandartCloseBtn = true;
+      this._resolve = null;
+      this._reject = null;
+
+      this._onHideEvents.forEach(function (f) {
+        return f();
+      });
     }
   }, {
-    key: "onClose",
-    value: function onClose() {
+    key: "_close",
+    value: function _close() {
       this.open = false;
+
+      this._hide();
     }
   }, {
-    key: "onKeypress",
-    value: function onKeypress(e) {
-      if (e.key === "Escape") {
-        this.open = false;
+    key: "showDialog",
+    value: function showDialog() {
+      var _this2 = this;
+
+      return new Promise(function (resolve, reject) {
+        _this2._resolve = resolve;
+        _this2._reject = reject;
+
+        _this2._show();
+      });
+    } // **** Events **** 
+
+  }, {
+    key: "_onClick",
+    value: function _onClick(e) {
+      var _a;
+
+      var el = e.target;
+
+      if (el.closest('.confirm')) {
+        (_a = this._resolve) === null || _a === void 0 ? void 0 : _a.call(this);
+        this._resolve = null;
+        this._reject = null;
+      }
+
+      if (el.closest('.dialog-hide')) {
+        this._close();
       }
     }
+  }, {
+    key: "_onKeypress",
+    value: function _onKeypress(e) {
+      if (e.key === "Escape") {
+        this._close();
+      }
+    }
+  }, {
+    key: "onHide",
+    value: function onHide(f) {
+      this._onHideEvents.push(f);
+    }
+  }, {
+    key: "offHide",
+    value: function offHide(f) {
+      this._onHideEvents = this._onHideEvents.filter(function (ef) {
+        return ef !== f;
+      });
+    }
+  }, {
+    key: "onShow",
+    value: function onShow(f) {
+      this._onShowEvents.push(f);
+    }
+  }, {
+    key: "offShow",
+    value: function offShow(f) {
+      this._onShowEvents = this._onShowEvents.filter(function (ef) {
+        return ef !== f;
+      });
+    }
   }], [{
+    key: "styles",
+    get: function get() {
+      return [_styles.DIALOG_STYLES];
+    }
+  }, {
     key: "properties",
     get: function get() {
       return {
@@ -5256,49 +6712,35 @@ var LitDialog = /*#__PURE__*/function (_LitElement) {
     }
   }]);
 
-  return LitDialog;
-}(_litElement.LitElement);
+  return LitModal;
+}(_lit.LitElement);
 
-exports.LitDialog = LitDialog;
-LitDialog.styles = [_styles.DIALOG_STYLES];
-(0, _tslib.__decorate)([(0, _litElement.property)({
-  type: Object,
-  attribute: false
-})], LitDialog.prototype, "header", void 0);
-(0, _tslib.__decorate)([(0, _litElement.property)({
-  type: Object,
-  attribute: false
-})], LitDialog.prototype, "content", void 0);
-(0, _tslib.__decorate)([(0, _litElement.property)({
-  type: Object,
-  attribute: false
-})], LitDialog.prototype, "footer", void 0);
-(0, _tslib.__decorate)([(0, _litElement.property)({
-  type: Boolean,
-  attribute: false
-})], LitDialog.prototype, "useStandartCloseBtn", void 0);
-(0, _tslib.__decorate)([(0, _litElement.property)({
-  type: String,
-  attribute: false
-})], LitDialog.prototype, "closeBtnText", void 0);
-exports.LitDialog = LitDialog = (0, _tslib.__decorate)([(0, _litElement.customElement)('lit-modal')], LitDialog);
-},{"tslib":"../node_modules/tslib/tslib.es6.js","lit-html":"../node_modules/lit-html/lit-html.js","lit-element":"../node_modules/lit-element/lit-element.js","kailib":"../node_modules/kailib/dist/index.js","./styles":"../src/styles.ts"}],"demo.ts":[function(require,module,exports) {
+exports.LitModal = LitModal;
+(0, _tslib.__decorate)([(0, _decorators.state)()], LitModal.prototype, "header", void 0);
+(0, _tslib.__decorate)([(0, _decorators.state)()], LitModal.prototype, "content", void 0);
+(0, _tslib.__decorate)([(0, _decorators.state)()], LitModal.prototype, "footer", void 0);
+(0, _tslib.__decorate)([(0, _decorators.state)()], LitModal.prototype, "closeBtnText", void 0);
+(0, _tslib.__decorate)([(0, _decorators.property)({
+  type: Boolean
+})], LitModal.prototype, "open", void 0);
+(0, _tslib.__decorate)([(0, _decorators.property)({
+  type: Boolean
+})], LitModal.prototype, "useCancelBtn", void 0);
+exports.LitModal = LitModal = (0, _tslib.__decorate)([(0, _decorators.customElement)('lit-modal')], LitModal);
+},{"tslib":"../node_modules/tslib/tslib.es6.js","lit":"../node_modules/lit/index.js","lit/decorators":"../node_modules/lit/decorators.js","kailib":"../node_modules/kailib/dist/index.js","./styles":"../src/styles.ts","./styles-media":"../src/styles-media.ts"}],"demo.ts":[function(require,module,exports) {
 "use strict";
 
 require("../src/index");
 
-var _litHtml = require("lit-html");
+var _lit = require("lit");
 
-var _templateObject, _templateObject2, _templateObject3, _templateObject4;
+var _templateObject;
 
 function _taggedTemplateLiteral(strings, raw) { if (!raw) { raw = strings.slice(0); } return Object.freeze(Object.defineProperties(strings, { raw: { value: Object.freeze(raw) } })); }
 
-var header = (0, _litHtml.html)(_templateObject || (_templateObject = _taggedTemplateLiteral(["Modal header"])));
-var content = (0, _litHtml.html)(_templateObject2 || (_templateObject2 = _taggedTemplateLiteral(["Modal content"])));
-var footer = (0, _litHtml.html)(_templateObject3 || (_templateObject3 = _taggedTemplateLiteral(["Modal footer"])));
-var modal = (0, _litHtml.html)(_templateObject4 || (_templateObject4 = _taggedTemplateLiteral(["\n    <lit-modal open \n    .header = \"", "\"\n    .content = \"", "\"\n    .footer = \"", "\"\n    ></lit-modal>\n"])), header, content, footer);
-(0, _litHtml.render)(modal, document.getElementById('app'));
-},{"../src/index":"../src/index.ts","lit-html":"../node_modules/lit-html/lit-html.js"}],"C:/Users/Kaifat/AppData/Roaming/npm/node_modules/parcel-bundler/src/builtins/hmr-runtime.js":[function(require,module,exports) {
+var modal = (0, _lit.html)(_templateObject || (_templateObject = _taggedTemplateLiteral(["\n    <lit-modal open>\n        <div slot = \"header\">Modal header</div>\n        <div>Content text</div>\n        <div slot = \"footer\">Modal footer</div>\n    </lit-modal>\n"])));
+(0, _lit.render)(modal, document.getElementById('app'));
+},{"../src/index":"../src/index.ts","lit":"../node_modules/lit/index.js"}],"C:/Users/Kaifat/AppData/Roaming/npm/node_modules/parcel-bundler/src/builtins/hmr-runtime.js":[function(require,module,exports) {
 var global = arguments[3];
 var OVERLAY_ID = '__parcel__error__overlay__';
 var OldModule = module.bundle.Module;
@@ -5326,7 +6768,7 @@ var parent = module.bundle.parent;
 if ((!parent || !parent.isParcelRequire) && typeof WebSocket !== 'undefined') {
   var hostname = "" || location.hostname;
   var protocol = location.protocol === 'https:' ? 'wss' : 'ws';
-  var ws = new WebSocket(protocol + '://' + hostname + ':' + "52016" + '/');
+  var ws = new WebSocket(protocol + '://' + hostname + ':' + "65500" + '/');
 
   ws.onmessage = function (event) {
     checkedAssets = {};

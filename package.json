@@ -1,6 +1,6 @@
 {
   "name": "lit-modal",
-  "version": "1.0.5",
+  "version": "1.0.28",
   "description": "Dialog window based on lit-element",
   "main": "dist/index.js",
   "module": "dist/index.js",
@@ -34,11 +34,12 @@
   "author": "kaifaty",
   "license": "MIT",
   "devDependencies": {
-    "lit-element": "latest",
     "tslib": "^2.1.0",
     "typescript": "^4.2.3"
   },
   "dependencies": {
-    "kailib": "^1.0.14"
+    "kailib": "^1.0.14",
+    "lit": "^2.0.0-rc.2",
+    "lit-element": "^2.5.1"
   }
 }
