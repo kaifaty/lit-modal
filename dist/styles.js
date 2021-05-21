@@ -52,23 +52,6 @@ footer{
     display: flex;
     justify-content: space-between;
 }
-button{
-    background-color: var(--button-background, #222);
-    border: var(--button-border, none);
-    color: var(--button-color, #fefefe);
-    padding: var(--button-padding, 5px 10px);
-    cursor: pointer;
-}
-button:hover{
-    background-color: var(--button-background-hover, #444);
-}
-button.primary{
-    color: var(--button-primary-color, #444);
-    background-color: var(--button-primary-background, #444);
-}
-button.primary:hover{
-    background-color: var(--button-primary-background-hover, #444);
-}
 .close-icon{
     position: absolute;
     padding: 10px;
@@ -77,6 +60,26 @@ button.primary:hover{
     cursor: pointer;
 }
 .close-icon svg{
-    fill: #888;
+    fill: var(--dialog-icon-fill, #888);
 }
+.dialog{
+    width: 600px;
+    height: initial;
+}
+@media screen and (max-width: 600px){
+.dialog{
+    width: calc(100% - 40px);
+}
+}
+@media screen and (max-width: 360px){
+    .dialog{
+    width: 100%;
+    }
+}
+@media screen and (max-height: 450px){
+    .dialog{
+    width: 320px;
+    }
+}
+
 `;
