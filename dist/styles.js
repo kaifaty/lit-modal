@@ -38,7 +38,8 @@ header{
     color: var(--modal-header-color, #fefefe);
     font-size: 16px;
 }
-header h1, header h2, header h3, header h4{
+
+header::slotted(h1), header::slotted(h2), header::slotted(h3), header::slotted(h4){
     margin: 0;
 }
 main{
@@ -67,18 +68,18 @@ footer{
     height: initial;
 }
 @media screen and (max-width: 600px){
-.dialog{
-    width: calc(100% - 40px);
-}
+    :host{
+        --modal-dialog-width: calc(100% - 40px);
+    }
 }
 @media screen and (max-width: 360px){
-    .dialog{
-    width: 100%;
+    :host{
+        --modal-dialog-width: 100%;
     }
 }
 @media screen and (max-height: 450px){
-    .dialog{
-    width: 320px;
+    :host{
+        --modal-dialog-height: 320px;
     }
 }
 
