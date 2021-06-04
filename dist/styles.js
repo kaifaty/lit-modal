@@ -39,7 +39,7 @@ header{
     font-size: 16px;
 }
 
-header::slotted(h1), header::slotted(h2), header::slotted(h3), header::slotted(h4){
+header ::slotted(h1), header ::slotted(h2), header ::slotted(h3), header ::slotted(h4){
     margin: 0;
 }
 main{

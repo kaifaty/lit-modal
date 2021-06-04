@@ -3,10 +3,6 @@ import type {TemplateResult} from 'lit';
 import { state, customElement, property } from 'lit/decorators';
 import { getScrollbarWidth } from 'kailib'
 import { DIALOG_STYLES } from './styles';
-import { DIALOG_MEDIASTYLES } from './styles-media';
-//import { BUTTON_STYLES } from '../../styles/buttons';
-
-let isOpened = false;
 
 @customElement('lit-modal')
 export class LitModal extends LitElement{
@@ -123,5 +119,8 @@ export class LitModal extends LitElement{
     }
 
 }
-
-export {DIALOG_MEDIASTYLES};
+declare global {
+    interface HTMLElementTagNameMap {
+      'lit-modal': LitModal;
+    }
+}
