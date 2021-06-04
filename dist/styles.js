@@ -53,6 +53,26 @@ footer{
     display: flex;
     justify-content: space-between;
 }
+<<<<<<< HEAD
+=======
+button{
+    background-color: var(--button-background, #222);
+    border: var(--button-border, none);
+    color: var(--button-color, #fefefe);
+    padding: var(--button-padding, 5px 10px);
+    cursor: pointer;
+}
+button:hover{
+    background-color: var(--button-background-hover, #444);
+}
+button.primary{
+    color: var(--button-primary-color, #444);
+    background-color: var(--button-primary-background, #444);
+}
+button.primary:hover{
+    background-color: var(--button-primary-background-hover, #444);
+}
+>>>>>>> 4c9baf1491b0556beafa7bf678e18dc65eb23637
 .close-icon{
     position: absolute;
     padding: 10px;

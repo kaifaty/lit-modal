@@ -1,4 +1,4 @@
-import { css } from 'lit-element';
+import { css } from 'lit';
 export const DIALOG_MEDIASTYLES = css `
 @media screen and (max-width: 600px){
     :host{

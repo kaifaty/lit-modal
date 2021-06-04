@@ -119,8 +119,3 @@ export class LitModal extends LitElement{
     }
 
 }
-declare global {
-    interface HTMLElementTagNameMap {
-      'lit-modal': LitModal;
-    }
-}
