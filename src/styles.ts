@@ -54,6 +54,11 @@ footer{
     display: flex;
     justify-content: space-between;
 }
+.closebtn-wrapper{
+    display: flex;
+    flex-direction: column;
+    justify-content: end;
+}
 .close-icon{
     position: absolute;
     padding: 10px;
