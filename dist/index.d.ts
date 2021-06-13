@@ -8,9 +8,6 @@ export declare class LitModal extends LitElement {
             reflect: boolean;
         };
     };
-    header: TemplateResult | string | null;
-    content: TemplateResult | string | null;
-    footer: TemplateResult | string | null;
     closeBtnText: TemplateResult | string;
     open: boolean;
     useCancelBtn: boolean;

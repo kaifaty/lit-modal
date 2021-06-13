@@ -6,9 +6,6 @@ import { DIALOG_STYLES } from './styles';
 let LitModal = class LitModal extends LitElement {
     constructor() {
         super(...arguments);
-        this.header = null;
-        this.content = null;
-        this.footer = null;
         this.closeBtnText = "Close";
         this.open = false;
         this.useCancelBtn = true;
@@ -67,9 +64,6 @@ let LitModal = class LitModal extends LitElement {
         document.body.style.overflow = 'initial';
         document.removeEventListener("keydown", this._onKeypress);
         (_a = this._reject) === null || _a === void 0 ? void 0 : _a.call(this);
-        this.header = null;
-        this.content = null;
-        this.footer = null;
         this._resolve = null;
         this._reject = null;
         this._onHideEvents.forEach(f => f());
@@ -116,15 +110,6 @@ let LitModal = class LitModal extends LitElement {
         this._onShowEvents = this._onShowEvents.filter(ef => ef !== f);
     }
 };
-__decorate([
-    state()
-], LitModal.prototype, "header", void 0);
-__decorate([
-    state()
-], LitModal.prototype, "content", void 0);
-__decorate([
-    state()
-], LitModal.prototype, "footer", void 0);
 __decorate([
     state()
 ], LitModal.prototype, "closeBtnText", void 0);

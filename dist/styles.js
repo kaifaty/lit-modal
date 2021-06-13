@@ -21,8 +21,6 @@ export const DIALOG_STYLES = css `
 .dialog{          
     position: relative;  
     width: var(--modal-dialog-width, 600px);
-    height: initial;
-    overflow-y: auto;
     z-index: 101;
     background-color: var(--modal-dialog-background, #fefefe);
     border-radius: 3px;
@@ -43,11 +41,12 @@ header ::slotted(h1), header ::slotted(h2), header ::slotted(h3), header ::slott
     margin: 0;
 }
 main{
-    padding: 15px 20px;
     flex: 1 1 auto;
+    max-height: var(--modal-dialog-height, calc(100vh - 200px));
+    overflow-y: auto;
 }
 header, main, footer{
-    padding: 15px 20px;
+    padding: var(--modal-dialog-padding, 15px 20px);
 }
 footer{
     display: flex;
@@ -76,11 +75,6 @@ footer{
 @media screen and (max-width: 360px){
     :host{
         --modal-dialog-width: 100%;
-    }
-}
-@media screen and (max-height: 450px){
-    :host{
-        --modal-dialog-height: 320px;
     }
 }
 
