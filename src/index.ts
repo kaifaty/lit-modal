@@ -3,11 +3,12 @@ import type {TemplateResult} from 'lit';
 import { state, customElement, property } from 'lit/decorators';
 import { getScrollbarWidth } from 'kailib'
 import { DIALOG_STYLES } from './styles';
+import { SCROLLBAR_STYLES } from './style';
 
 @customElement('lit-modal')
 export class LitModal extends LitElement{
     static get styles() {
-        return [DIALOG_STYLES];
+        return [DIALOG_STYLES, SCROLLBAR_STYLES];
     };
     static get properties() { 
         return { open: { type: Boolean, reflect: true } };
@@ -34,7 +35,7 @@ export class LitModal extends LitElement{
                         <rect width="2.8123" height="21.093" rx="1.40615" transform="matrix(0.704224 -0.709977 0.712062 0.702117 0 2.19031)" />
                     </svg>
                 </div>
-                <main>
+                <main class = "ff-scrollbar">
                     <slot></slot>
                 </main>
                 <footer>
