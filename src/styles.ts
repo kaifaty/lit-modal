@@ -35,25 +35,24 @@ export const DIALOG_STYLES = css`
     box-shadow: 1px 1px 8px var(--dialog-boxshadow, rgba(0,0,0,0.7));
 }
 
-header, main, footer{
-    padding: var( --dialog-padding, 15px 20px);
-}
 header ::slotted(h1), header ::slotted(h2), header ::slotted(h3), header ::slotted(h4){
     margin: 0;
 }
 main{
     flex: 1 1 auto;
+    padding: var(--dialog-main-padding, var(--dialog-padding, 15px 20px));
 }
 header{
     position: relative;
     background-color: var(--dialog-header-background, #111);
     color: var(--dialog-header-color, #fefefe);
-    padding: var(--dialog-header-padding, 15px 20px);
+    padding: var(--dialog-header-padding, var(--dialog-padding, 15px 20px));
     font-size: 16px;
 }
 footer{
     display: flex;
     justify-content: space-between;
+    padding: var(--dialog-footer-padding, var(--dialog-padding, 15px 20px));
 }
 .closebtn-wrapper{
     display: flex;
