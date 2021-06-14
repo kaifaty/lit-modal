@@ -12,9 +12,6 @@ export class LitModal extends LitElement{
     static get properties() { 
         return { open: { type: Boolean, reflect: true } };
       }
-    @state() header: TemplateResult | string | null = null;
-    @state() content: TemplateResult | string | null = null;
-    @state() footer: TemplateResult | string | null = null;
     @state() closeBtnText: TemplateResult | string = "Close";
     @property({type: Boolean}) open: boolean = false;
     @property({type: Boolean}) useCancelBtn: boolean = true;
@@ -68,9 +65,6 @@ export class LitModal extends LitElement{
         document.body.style.overflow = 'initial';
         document.removeEventListener("keydown", this._onKeypress);
         this._reject?.();
-        this.header = null;
-        this.content = null;
-        this.footer = null;
         this._resolve = null;
         this._reject = null;
         this._onHideEvents.forEach(f => f());
