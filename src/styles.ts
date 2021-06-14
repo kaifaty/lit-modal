@@ -9,7 +9,7 @@ export const DIALOG_STYLES = css`
     height: 100vh;
     position: fixed;
     z-index: 100;
-    background-color: var(--modal-overlap, rgba(0,0,0,0.7));
+    background-color: var(--dialog-overlap, rgba(0,0,0,0.7));
     display: flex;
     align-items: center;
     justify-content: center;
@@ -20,24 +20,24 @@ export const DIALOG_STYLES = css`
 }
 .dialog{          
     position: relative;  
-    width: var(--modal-dialog-width, 600px);
+    width: var(--dialog-width, 600px);
     height: initial;
     overflow-y: auto;
     z-index: 101;
     color: black;
-    color: var(--modal-dialog-color, black);
-    background-color: var(--modal-dialog-background, #fefefe);
+    color: var(--dialog-color, black);
+    background-color: var(--dialog-background, #fefefe);
     border-radius: 3px;
     box-sizing: border-box;
     word-wrap: break-word;
     display: flex;
     flex-direction: column;                        
-    box-shadow: 1px 1px 8px var(--modal-dialog-boxshadow, rgba(0,0,0,0.7));
+    box-shadow: 1px 1px 8px var(--dialog-boxshadow, rgba(0,0,0,0.7));
 }
 header{
     position: relative;
-    background-color: var(--modal-header-background, #111);
-    color: var(--modal-header-color, #fefefe);
+    background-color: var(--dialog-header-background, #111);
+    color: var(--dialog-header-color, #fefefe);
     font-size: 16px;
 }
 

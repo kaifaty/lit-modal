@@ -20,11 +20,11 @@ npm i lit-modal
 
 | Name | Default |
 |- | - |
-|`--modal-overlap`|` rgba(0,0,0,0.7)`|
-|`--modal-dialog-background`| `#fefefe` |
-|`--modal-dialog-boxshadow`| `rgba(0,0,0,0.7)` |
-|`--modal-header-background`|`#111` |
-|`--modal-header-color`| `#fefefe` |
+|`--dialog-overlap`|` rgba(0,0,0,0.7)`|
+|`--dialog-background`| `#fefefe` |
+|`--dialog-boxshadow`| `rgba(0,0,0,0.7)` |
+|`--dialog-header-background`|`#111` |
+|`--dialog-header-color`| `#fefefe` |
 |`--button-background`| `#222` |
 |`--button-background-hover`| `#444` |
 |`--button-border`| `none` |
