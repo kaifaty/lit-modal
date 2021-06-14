@@ -12,9 +12,6 @@ npm i lit-modal
 
 | Name        | Prop/Attr    | Type                     |  Description        |
 |-------------|--------------|:-------------------------|---------------------|
-| `header`    | Prop         | `TemplateResult, null`   | If nou null render `<header></header>` at top of modal         |
-| `content`   | Prop         | `TemplateResult, null`   | Content of modal |
-| `footer`    | Prop         | `TemplateResult, null`   | Footer of modal |
 | `open`      | Attr         | `Boolean`                | Open/close state |
 | `closeBtnText` | Attr      | `String`                 | Text of default close btn |
 | `useStandartCloseBtn` | Attr | `Boolean`              | Flag of using default close btn|

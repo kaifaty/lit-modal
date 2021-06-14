@@ -9,7 +9,6 @@ export const DIALOG_STYLES = css `
     position: fixed;
     z-index: 100;
     background-color: var(--modal-overlap, rgba(0,0,0,0.7));
-    color: black;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -24,6 +23,8 @@ export const DIALOG_STYLES = css `
     height: initial;
     overflow-y: auto;
     z-index: 101;
+    color: black;
+    color: var(--modal-dialog-color, black);
     background-color: var(--modal-dialog-background, #fefefe);
     border-radius: 3px;
     box-sizing: border-box;
