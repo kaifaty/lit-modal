@@ -48,7 +48,7 @@ header{
     position: relative;
     background-color: var(--dialog-header-background, #111);
     color: var(--dialog-header-color, #fefefe);
-    padding: var( --dialog-header-padding, 15px 20px);
+    padding: var(--dialog-header-padding, 15px 20px);
     font-size: 16px;
 }
 footer{
