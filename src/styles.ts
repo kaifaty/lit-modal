@@ -38,6 +38,7 @@ header{
     position: relative;
     background-color: var(--dialog-header-background, #111);
     color: var(--dialog-header-color, #fefefe);
+    padding: var( --dialog-header-padding, 15px 20px);
     font-size: 16px;
 }
 
@@ -45,11 +46,10 @@ header ::slotted(h1), header ::slotted(h2), header ::slotted(h3), header ::slott
     margin: 0;
 }
 main{
-    padding: 15px 20px;
     flex: 1 1 auto;
 }
 header, main, footer{
-    padding: 15px 20px;
+    padding: var( --dialog-padding, 15px 20px);
 }
 footer{
     display: flex;
