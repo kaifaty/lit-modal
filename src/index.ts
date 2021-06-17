@@ -26,7 +26,7 @@ export class LitModal extends LitElement{
         return html`
         <div @click = "${this._onClick}" 
             class = "overlap ${this.open ? 'visible' : ''}">
-            <div class = "dialog ff-scrollbar">
+            <div class = "dialog ">
                 <header><slot name = "header"></slot></header>
                 <div class = "close-icon"
                     @click = "${this._close}">
@@ -35,7 +35,7 @@ export class LitModal extends LitElement{
                         <rect width="2.8123" height="21.093" rx="1.40615" transform="matrix(0.704224 -0.709977 0.712062 0.702117 0 2.19031)" />
                     </svg>
                 </div>
-                <main>
+                <main class = "ff-scrollbar">
                     <slot></slot>
                 </main>
                 <footer>

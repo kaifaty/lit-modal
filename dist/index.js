@@ -3,6 +3,7 @@ import { LitElement, html, nothing } from 'lit';
 import { state, customElement, property } from 'lit/decorators';
 import { getScrollbarWidth } from 'kailib';
 import { DIALOG_STYLES } from './styles';
+import { SCROLLBAR_STYLES } from './scrollbar';
 let LitModal = class LitModal extends LitElement {
     constructor() {
         super(...arguments);
@@ -15,7 +16,7 @@ let LitModal = class LitModal extends LitElement {
         this._reject = null;
     }
     static get styles() {
-        return [DIALOG_STYLES];
+        return [DIALOG_STYLES, SCROLLBAR_STYLES];
     }
     ;
     static get properties() {

@@ -18,12 +18,14 @@ export const DIALOG_STYLES = css`
 .overlap.visible{
     visibility: visible;
 }
-.dialog{          
-    position: relative;  
-    width: var(--dialog-width, 600px);
+main{
     height: var(--dialog-height, initial);
     max-height: var(--dialog-max-height, initial);
     overflow-y: auto;
+}
+.dialog{          
+    position: relative;  
+    width: var(--dialog-width, 600px);
     z-index: 101;
     color: black;
     color: var(--dialog-color, black);
