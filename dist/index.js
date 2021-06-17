@@ -25,7 +25,7 @@ let LitModal = class LitModal extends LitElement {
         return html `
         <div @click = "${this._onClick}" 
             class = "overlap ${this.open ? 'visible' : ''}">
-            <div class = "dialog">
+            <div class = "dialog ff-scrollbar">
                 <header><slot name = "header"></slot></header>
                 <div class = "close-icon"
                     @click = "${this._close}">

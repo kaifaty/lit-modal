@@ -3,11 +3,12 @@ import type {TemplateResult} from 'lit';
 import { state, customElement, property } from 'lit/decorators';
 import { getScrollbarWidth } from 'kailib'
 import { DIALOG_STYLES } from './styles';
+import { SCROLLBAR_STYLES } from './scrollbar';
 
 @customElement('lit-modal')
 export class LitModal extends LitElement{
     static get styles() {
-        return [DIALOG_STYLES];
+        return [DIALOG_STYLES, SCROLLBAR_STYLES];
     };
     static get properties() { 
         return { open: { type: Boolean, reflect: true } };
