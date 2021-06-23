@@ -80,11 +80,4 @@ footer{
     :host{
         --dialog-width: 100%;
     }
-}
-@media screen and (max-height: 450px){
-    :host{
-        --dialog-height: 320px;
-    }
-}
-
-`;
+}`;
