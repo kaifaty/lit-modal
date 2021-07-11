@@ -12,8 +12,7 @@ let LitModal = class LitModal extends LitElement {
         this.useCancelBtn = true;
         this._onHideEvents = [];
         this._onShowEvents = [];
-        this._resolve = null;
-        this._reject = null;
+        this._onConfirmEvents = [];
     }
     static get styles() {
         return [DIALOG_STYLES, SCROLLBAR_STYLES];
@@ -29,7 +28,7 @@ let LitModal = class LitModal extends LitElement {
             <div class = "dialog ">
                 <header><slot name = "header"></slot></header>
                 <div class = "close-icon"
-                    @click = "${this._close}">
+                    @click = "${this.closeDialog}">
                     <svg width="17" height="17" viewBox="0 0 17 17" xmlns="http://www.w3.org/2000/svg">
                         <rect width="2.8124" height="21.0923" rx="1.4062" transform="matrix(0.712062 0.702117 -0.704224 0.709977 14.8538 0)" />
                         <rect width="2.8123" height="21.093" rx="1.40615" transform="matrix(0.704224 -0.709977 0.712062 0.702117 0 2.19031)" />
@@ -40,7 +39,7 @@ let LitModal = class LitModal extends LitElement {
                 </main>
                 <footer>
                     ${this.useCancelBtn
-            ? html `<div @click = "${this._close}" class = "closebtn-wrapper">
+            ? html `<div @click = "${this.closeDialog}" class = "closebtn-wrapper">
                                     <slot name = "closeBtn">
                                     <button type = "button"
                                             class = "button">${this.closeBtnText}</button>
@@ -59,43 +58,34 @@ let LitModal = class LitModal extends LitElement {
         document.addEventListener("keydown", this._onKeypress.bind(this));
         this.open = true;
     }
-    _hide() {
-        var _a;
+    _hide(dispatchEvent = true) {
         document.body.style.paddingRight = "initial";
         document.body.style.overflow = 'initial';
         document.removeEventListener("keydown", this._onKeypress);
-        (_a = this._reject) === null || _a === void 0 ? void 0 : _a.call(this);
-        this._resolve = null;
-        this._reject = null;
-        this._onHideEvents.forEach(f => f());
-    }
-    _close() {
-        this.open = false;
-        this._hide();
+        if (dispatchEvent) {
+            this._onHideEvents.forEach(f => f());
+        }
     }
     showDialog() {
-        return new Promise((resolve, reject) => {
-            this._resolve = resolve;
-            this._reject = reject;
-            this._show();
-        });
+        this._show();
+    }
+    closeDialog(dispatchEvent = true) {
+        this.open = false;
+        this._hide(dispatchEvent);
     }
     // **** Events **** 
     _onClick(e) {
-        var _a;
         const el = e.target;
         if (el.closest('.confirm')) {
-            (_a = this._resolve) === null || _a === void 0 ? void 0 : _a.call(this);
-            this._resolve = null;
-            this._reject = null;
+            this._onConfirmEvents.forEach(f => f());
         }
-        if (el.closest('.dialog-hide')) {
-            this._close();
+        else if (el.closest('.dialog-hide')) {
+            this.closeDialog();
         }
     }
     _onKeypress(e) {
         if (e.key === "Escape") {
-            this._close();
+            this.closeDialog();
         }
     }
     onHide(f) {
@@ -109,6 +99,12 @@ let LitModal = class LitModal extends LitElement {
     }
     offShow(f) {
         this._onShowEvents = this._onShowEvents.filter(ef => ef !== f);
+    }
+    onConfirm(f) {
+        this._onConfirmEvents.push(f);
+    }
+    offConfirm(f) {
+        this._onConfirmEvents = this._onConfirmEvents.filter(ef => ef !== f);
     }
 };
 __decorate([

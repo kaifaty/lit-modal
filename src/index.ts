@@ -18,9 +18,7 @@ export class LitModal extends LitElement{
     @property({type: Boolean}) useCancelBtn: boolean = true;
     _onHideEvents: Function[] = [];
     _onShowEvents: Function[] = [];
-    _resolve: Function | null = null;
-    _reject: Function | null = null;
-
+    _onConfirmEvents: Function[] = [];
 
     render(){
         return html`
@@ -29,7 +27,7 @@ export class LitModal extends LitElement{
             <div class = "dialog ">
                 <header><slot name = "header"></slot></header>
                 <div class = "close-icon"
-                    @click = "${this._close}">
+                    @click = "${this.closeDialog}">
                     <svg width="17" height="17" viewBox="0 0 17 17" xmlns="http://www.w3.org/2000/svg">
                         <rect width="2.8124" height="21.0923" rx="1.4062" transform="matrix(0.712062 0.702117 -0.704224 0.709977 14.8538 0)" />
                         <rect width="2.8123" height="21.093" rx="1.40615" transform="matrix(0.704224 -0.709977 0.712062 0.702117 0 2.19031)" />
@@ -41,7 +39,7 @@ export class LitModal extends LitElement{
                 <footer>
                     ${
                         this.useCancelBtn 
-                        ? html`<div @click = "${this._close}" class = "closebtn-wrapper">
+                        ? html`<div @click = "${this.closeDialog}" class = "closebtn-wrapper">
                                     <slot name = "closeBtn">
                                     <button type = "button"
                                             class = "button">${this.closeBtnText}</button>
@@ -61,43 +59,37 @@ export class LitModal extends LitElement{
         document.addEventListener("keydown", this._onKeypress.bind(this));
         this.open = true;
     }
-    private _hide(){
+    private _hide(dispatchEvent: boolean = true){
         document.body.style.paddingRight = "initial";
         document.body.style.overflow = 'initial';
         document.removeEventListener("keydown", this._onKeypress);
-        this._reject?.();
-        this._resolve = null;
-        this._reject = null;
-        this._onHideEvents.forEach(f => f());
-    }
-    private _close(){
-        this.open = false;
-        this._hide();
+        if(dispatchEvent){
+            this._onHideEvents.forEach(f => f());
+        }        
     }
     public showDialog(){
-        return new Promise((resolve, reject) => {
-            this._resolve = resolve;
-            this._reject = reject;
-            this._show();
-        })
+        this._show();
     }
 
+    public closeDialog(dispatchEvent: boolean = true){
+        this.open = false;
+        this._hide(dispatchEvent);
+    }
+    
     // **** Events **** 
     
     private _onClick(e: Event){
         const el = e.target as HTMLElement;
         if(el.closest('.confirm')){
-            this._resolve?.();
-            this._resolve = null;
-            this._reject = null;
+            this._onConfirmEvents.forEach(f => f());
         }
-        if(el.closest('.dialog-hide')){            
-            this._close();
+        else if(el.closest('.dialog-hide')){            
+            this.closeDialog();
         }
     }
     private _onKeypress(e: KeyboardEvent){
         if(e.key === "Escape"){
-            this._close()
+            this.closeDialog()
         }        
     }
     public onHide(f: Function){
@@ -111,6 +103,12 @@ export class LitModal extends LitElement{
     }
     public offShow(f: Function){
         this._onShowEvents = this._onShowEvents.filter(ef => ef !== f);
+    }
+    public onConfirm(f) {
+        this._onConfirmEvents.push(f);
+    }
+    public offConfirm(f) {
+        this._onConfirmEvents = this._onConfirmEvents.filter(ef => ef !== f);
     }
 
 }

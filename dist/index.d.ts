@@ -13,19 +13,20 @@ export declare class LitModal extends LitElement {
     useCancelBtn: boolean;
     _onHideEvents: Function[];
     _onShowEvents: Function[];
-    _resolve: Function | null;
-    _reject: Function | null;
+    _onConfirmEvents: Function[];
     render(): TemplateResult<1>;
     private _show;
     private _hide;
-    private _close;
-    showDialog(): Promise<unknown>;
+    showDialog(): void;
+    closeDialog(dispatchEvent?: boolean): void;
     private _onClick;
     private _onKeypress;
     onHide(f: Function): void;
     offHide(f: Function): void;
     onShow(f: Function): void;
     offShow(f: Function): void;
+    onConfirm(f: any): void;
+    offConfirm(f: any): void;
 }
 declare global {
     interface HTMLElementTagNameMap {
