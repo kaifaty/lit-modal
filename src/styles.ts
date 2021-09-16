@@ -2,13 +2,14 @@ import { css } from 'lit';
 
 export const DIALOG_STYLES = css`
 .overlap{
+    --dialog-z-index: 125;
     margin: 0;
     top: 0;
     padding: 0;
     width: 100%;
     height: 100vh;
     position: fixed;
-    z-index: 100;
+    z-index: var(--dialog-z-index, 100);
     background-color: var(--dialog-overlap, rgba(0,0,0,0.7));
     display: flex;
     align-items: center;
@@ -19,14 +20,17 @@ export const DIALOG_STYLES = css`
     visibility: visible;
 }
 main{
-    height: var(--dialog-height, initial);
     max-height: var(--dialog-max-height, initial);
     overflow-y: auto;
+    overflow-x: hidden;
 }
 .dialog{          
-    position: relative;  
+    position: var(--dialog-position, relative);
+    top: var(--dialog-top, initial);
+    left: var(--dialog-left, initial);
     width: var(--dialog-width, 600px);
-    z-index: 101;
+    height: var(--dialog-height, initial);
+    z-index: calc(var(--dialog-z-index, 100) + 1);
     color: black;
     color: var(--dialog-color, black);
     background-color: var(--dialog-background, #fefefe);
@@ -71,14 +75,4 @@ footer{
 }
 .close-icon svg{
     fill: var(--dialog-icon-fill, #888);
-}
-@media screen and (max-width: 600px){
-    :host{
-        --dialog-width: calc(100% - 40px);
-    }
-}
-@media screen and (max-width: 360px){
-    :host{
-        --dialog-width: 100%;
-    }
 }`
