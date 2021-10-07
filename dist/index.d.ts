@@ -1,7 +1,7 @@
 import { LitElement } from 'lit';
 import type { TemplateResult } from 'lit';
 export declare class LitModal extends LitElement {
-    static get styles(): import("lit").CSSResultGroup[];
+    static get styles(): import("lit").CSSResult[];
     static get properties(): {
         open: {
             type: BooleanConstructor;

@@ -7,7 +7,7 @@ export const DIALOG_STYLES = css`
     top: 0;
     padding: 0;
     width: 100%;
-    height: 100vh;
+    height: 100%;
     position: fixed;
     z-index: var(--dialog-z-index, 100);
     background-color: var(--dialog-overlap, rgba(0,0,0,0.7));
