@@ -20,11 +20,11 @@ export const DIALOG_STYLES = css`
     visibility: visible;
 }
 main{
-    max-height: var(--dialog-max-height, initial);
     overflow-y: auto;
     overflow-x: hidden;
 }
 .dialog{          
+    max-height: var(--dialog-max-height, initial);
     position: var(--dialog-position, relative);
     top: var(--dialog-top, initial);
     left: var(--dialog-left, initial);
