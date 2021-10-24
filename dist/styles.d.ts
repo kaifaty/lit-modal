@@ -1,1 +1,1 @@
-export declare const DIALOG_STYLES: import("lit").CSSResultGroup;
+export declare const DIALOG_STYLES: import("lit").CSSResult;
